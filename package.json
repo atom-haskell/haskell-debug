@@ -1,0 +1,23 @@
+{
+  "name": "haskell-debug",
+  "version": "1.0.0",
+  "description": "Implements a haskell debugger in atom using ghci",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ThomasHickman/haskell-debug.git"
+  },
+  "keywords": [
+    "haskell",
+    "debug"
+  ],
+  "author": "Thomas Hickman",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ThomasHickman/haskell-debug/issues"
+  },
+  "homepage": "https://github.com/ThomasHickman/haskell-debug#readme"
+}
