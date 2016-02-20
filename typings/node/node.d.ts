@@ -1800,6 +1800,9 @@ declare module "stream" {
         unshift(chunk: any): void;
         wrap(oldStream: NodeJS.ReadableStream): NodeJS.ReadableStream;
         push(chunk: any, encoding?: string): boolean;
+
+        //TKH EDIT
+        cork(): void;
     }
 
     export interface WritableOptions {

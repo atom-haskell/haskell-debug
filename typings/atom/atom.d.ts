@@ -891,7 +891,7 @@ declare module AtomCore {
 		onDidChangeCursorPosition(callback: Function): Disposable;
 		onDidSave(callback: (event: { path: string }) => void): Disposable;
 
-		decorateMarker(marker: Marker, options: any): Decoration;
+		//decorateMarker(marker: Marker, options: any): Decoration;
 		getLastCursor(): ICursor;
 	}
 
