@@ -22,6 +22,7 @@
     "compileOnSave": true,
     "buildOnSave": false,
     "files": [
+        "lib/common.d.ts",
         "lib/HaskellDebug.ts",
         "lib/main.ts",
         "newTypings/atom.d.ts",
@@ -38,5 +39,15 @@
     ],
     "atom": {
         "rewriteTsconfig": true
+    },
+    "packageDependencies": {
+        "tool-bar": "0.1.9"
+    },
+    "consumedServices": {
+        "tool-bar": {
+            "versions": {
+                "^0.1.0": "consumeToolBar"
+            }
+        }
     }
 }

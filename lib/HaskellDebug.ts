@@ -2,22 +2,29 @@ import cp = require("child_process");
 import stream = require("stream");
 import atomAPI = require("atom");
 
-function getPenultimateLine(str: string){
-    var lines = str.split("\n")
-    return lines[lines.length - 1];
-}
-
 module HaskellDebug {
-    interface BreakInfo{
+    function getPenultimateLine(str: string){
+        var lines = str.split("\n")
+        return lines[lines.length - 1];
+    }
+
+    export interface BreakInfo{
         filename: string;
         range: TextBuffer.IRange;
         onError?: boolean;
     }
 
-    class HaskellDebug{
+    export interface Breakpoint{
+        line: number;
+        module: string;
+    }
+
+    export class HaskellDebug{
         private ghci_cmd: cp.ChildProcess;
-        private stdout: stream.Readable;
-        private stdin: stream.Writable;
+        stdout: stream.Readable;
+        stdin: stream.Writable;
+        private breakpoints: Breakpoint[] = []; //Lines to break on
+        private isRunning = false;
 
         /** Event Handler
           *
@@ -34,18 +41,26 @@ module HaskellDebug {
           */
         public emitter = new atomAPI.Emitter();
 
-        constructor(filename: string){
-            this.ghci_cmd = cp.spawn("ghci", [filename]);
+        constructor(){
+            this.ghci_cmd = cp.spawn("ghci");
             this.stdout = this.ghci_cmd.stdout;
             this.stdin = this.ghci_cmd.stdin;
+            this.stdout.on("message", (...args) => {
+                console.log(args);
+            })
         }
 
-        pauseOnException(){
-            this.out(":set -fbreak-on-exception");
+        public async loadModule(name: string){
+            await this.out(`:load ${name}`);
         }
 
-        static pausedOnError = Symbol("Paused on Error");
-        static finishedDebugging = Symbol("Finished debugging")
+        public async pauseOnException(){
+            await this.out(":set -fbreak-on-exception");
+        }
+
+        public async addBreakpoint(breakpoint: Breakpoint){
+            await this.out(`:break ${breakpoint.module} ${breakpoint.line}`)
+        }
 
         async getBindings(){
             this.out(":show bindings");
@@ -54,78 +69,89 @@ module HaskellDebug {
             return lines.slice(0, lines.length - 2);
         }
 
+        static pausedOnError = Symbol("Paused on Error");
+        static finishedDebugging = Symbol("Finished debugging")
+        static notFinal = Symbol("Not final");
+
         private readPrompt(stdOutput: string): BreakInfo | Symbol{
             var breakInfoOb: BreakInfo;
-
-            var multiLine = /\[(?:[-\d]*:)?(.*):\((\d+),\d+\)-\(\d+,\d+\).*\]/;
-            var mutliLineMatch = stdOutput.match(stdOutput);
-            var singleLine = /\[(?:[-\d]*:)?(.*):\d*:\d*-\d*\]/;
-            var singleLineMatch = stdOutput.match(stdOutput);
-            var errorPattern = /\[<exception thrown>\]/;
-            var errorMatch = stdOutput.match(errorPattern);
-
-            if(mutliLineMatch != null){
-                return {
-                    filename: mutliLineMatch[0],
-                    range: new atomAPI.Range([multiLine[1], multiLine[2]],
-                        [multiLine[3], multiLine[4]])
+            var patterns = <{pattern: RegExp; func: (match: string[]) => BreakInfo | Symbol}[]>[{
+                pattern: /\[(?:[-\d]*: )?(.*):\((\d+),(\d+)\)-\((\d+),(\d+)\).*\].*> $/,
+                func: match => ({
+                    filename: match[1],
+                    range: new atomAPI.Range([parseInt(match[2]) - 1, parseInt(match[3]) - 1],
+                        [parseInt(match[4]), parseInt(match[5])])
+                })
+            },{
+                pattern: /\[(?:[-\d]*: )?(.*):(\d*):(\d*)-(\d*)\].*> $/,
+                func: match => ({
+                        filename: match[1],
+                        range: new atomAPI.Range([parseInt(match[2]) - 1, parseInt(match[3]) - 1],
+                            [parseInt(match[2]), parseInt(match[4])])
+                })
+            },{
+                pattern: /\[<exception thrown>\].*> $/,
+                func: () => HaskellDebug.pausedOnError
+            },{
+                pattern: /.*> $/,
+                func: () => HaskellDebug.finishedDebugging
+            }]
+            for (var pattern of patterns){
+                var matchResult = stdOutput.match(pattern.pattern);
+                if(matchResult != null){
+                    return pattern.func(matchResult);
                 }
             }
-            else if(singleLineMatch != null){
-                return {
-                    filename: mutliLineMatch[0],
-                    range: new atomAPI.Range([multiLine[1], multiLine[2]],
-                        [multiLine[1], multiLine[3]])
-                }
-            }
-            else if(errorMatch != null){
-                return HaskellDebug.pausedOnError
-            }
-            else{
-                return HaskellDebug.finishedDebugging;
-            }
+            return HaskellDebug.notFinal;
         }
 
-        private observeInput(){
+        public forward(){
+            this.observeInput();
+            this.out(":forward");
+        }
+
+        public back(){
+            this.observeInput()
+            this.out(":back");
+        }
+
+        private async observeInput(){
             this.stdout.cork();
-            var listenerFunc = (data: string) => {
-                var input = this.readPrompt(data);
+            var str = await this.in();
+            var input = this.readPrompt(str.toString());
 
-                if(input == HaskellDebug.pausedOnError){
-                    observer.removeListener("data", listenerFunc);
-                    this.out("print _exception")
-                    observer.once("data", (data) => {
-                        var errorMes = getPenultimateLine(data);
-                        this.emitter.emit("paused-on-exception", errorMes);
+            if(input == HaskellDebug.pausedOnError){
+                this.stdout.cork();
+                this.stdout.pause();
+                this.out("print _exception")
+                this.stdout.once("data", (newData) => {/*
+                    var errorMes = getPenultimateLine(newData.toString());
+                    this.emitter.emit("paused-on-exception", errorMes);*/
+                    //Doesn't work at the moment - print _exception doesn't work
+                    //TODO: make work
 
-                        observer.addListener("data", listenerFunc);
-                        this.out(":back");
-                    })
-                }
-                else if(input == HaskellDebug.finishedDebugging){
-                    this.emitter.emit("debug-finished", undefined);
-                }
-                else{
-                    this.emitter.emit("line-changed", input);
-                }
-            };
-
-            var observer = this.stdout.once("data", listenerFunc);
+                    this.observeInput();
+                    this.out(":back");
+                })
+                this.stdout.unpause();
+            }
+            else if(input == HaskellDebug.finishedDebugging){
+                this.emitter.emit("debug-finished", undefined);
+            }
+            else if(input == HaskellDebug.notFinal){
+                this.observeInput();
+            }
+            else{
+                this.emitter.emit("line-changed", input);
+            }
         }
 
         async startDebug(pauseOnException: boolean){
             await this.in();
+
             this.out(":trace main")
 
-            if (pauseOnException)
-                this.pauseOnException();
-
             this.observeInput();
-
-            this.out("print _exception")
-            var errorMes = getPenultimateLine(await this.in())
-            this.out(":back");
-            console.log("Broken on error: '" + errorMes + "'");
         }
 
         private in(): Promise<string>{
@@ -135,7 +161,7 @@ module HaskellDebug {
         }
 
         private out(str: string){
-            this.stdin.write(str)
+            this.stdin.write(str + "\n");
         }
     }
 }
