@@ -20,6 +20,9 @@ declare module AtomCore{
     interface IEditor{
         gutterWithName(name: string): IGutter;
         addGutter(options: IGutterInput): IGutter;
+        getRootScopeDescriptor(): {
+            scopes: string[]
+        }
     }
 
     interface IGutter{

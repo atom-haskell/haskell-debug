@@ -49,16 +49,16 @@ function replButtonClicked(){
 }
 
 function toggleBreakpoint(lineNumber: number){
-    var te = atom.workspace.getActiveEditor();
+    var te = atom.workspace.getActiveTextEditor();
 
     if(breakpoints.has(lineNumber)){
-        te.destroyMarker(breakpoints.get(lineNumber));
+        te.destroyMarker(breakpoints.get(lineNumber).marker.id);
         breakpoints.delete(lineNumber);
     }
     else{
-        let breakpointMarker = te.markBufferRange();
-        te.decorateMarker(currentMarker, {
-            type: "gutter",
+        let breakpointMarker = te.markBufferRange(new atomAPI.Range([lineNumber, 0], [lineNumber + 1, 0]));
+        te.decorateMarker(breakpointMarker, {
+            type: "line-number",
             class: "breakpoint"
         })
 
@@ -71,15 +71,16 @@ function toggleBreakpoint(lineNumber: number){
 }
 
 function setUpBreakpointsUI(){
-    var te = atom.workspace.getActiveEditor();
+    var te = atom.workspace.getActiveTextEditor();
     var lineNumbersModal = te.gutterWithName("line-number");
     var view = <HTMLElement>atom.views.getView(lineNumbersModal);
 
-    Array.from(view.querySelectorAll(".line-number")).forEach(element => {
-        element.addEventListener("click", () => {
-            var lineNumber = parseInt(element.getAttribute("data-buffer-row"))
+    view.addEventListener("click", ev => {
+        var scopes = te.getRootScopeDescriptor().scopes;
+        if(scopes.length == 1 && scopes[0] == "source.haskell"){
+            var lineNumber: number = parseInt(ev["path"][0].dataset.bufferRow);
             toggleBreakpoint(lineNumber);
-        })
+        }
     })
 }
 
@@ -91,9 +92,11 @@ module.exports = {
         return reloader({pkg:"haskell-debug",files:["package.json", "lib/main.js", "lib/HaskellDebug.js"],folders:["lib/"]})
     },
     activate: () => {
+        setUpBreakpointsUI();
         atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {
-            if((<any>te.languageMode).scopes[0] == "source.haskell"){
-                setUpBreakpointsUI();
+            var scopes = te.getRootScopeDescriptor().scopes;
+            if(scopes.length == 1 &&
+                scopes[0] == "source.haskell"){
             }
         })
         atom.commands.add("atom-text-editor[data-grammar='source haskell']", "haskell:debug", () => {
