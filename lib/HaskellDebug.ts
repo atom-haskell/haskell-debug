@@ -23,6 +23,7 @@ module HaskellDebug {
         private ghci_cmd: cp.ChildProcess;
         stdout: stream.Readable;
         stdin: stream.Writable;
+        stderr: stream.Readable;
         private breakpoints: Breakpoint[] = []; //Lines to break on
         private isRunning = false;
 
@@ -45,9 +46,9 @@ module HaskellDebug {
             this.ghci_cmd = cp.spawn("ghci");
             this.stdout = this.ghci_cmd.stdout;
             this.stdin = this.ghci_cmd.stdin;
-            this.stdout.on("message", (...args) => {
-                console.log(args);
-            })
+            this.stderr = this.ghci_cmd.stderr;
+            this.stdout.on("readable", () => this.onReadable());
+            this.stderr.on("readable", () => console.log(`stderr: %c ${this.stderr.read().toString()}`, "color: red"))
         }
 
         public async loadModule(name: string){
@@ -148,10 +149,40 @@ module HaskellDebug {
 
         async startDebug(pauseOnException: boolean){
             await this.in();
-
             this.out(":trace main")
-
             this.observeInput();
+        }
+
+        private currentCommandBuffer = "";
+        private commandListeners = <((output: string) => any)[]>[];
+        private commandFinishedString = "\"command_finish_o4uB1whagteqE8xBq9oq\"\n";
+
+        private onReadable(){
+            var currentString = (this.stdout.read() || "").toString();
+            console.log(currentString);
+            this.currentCommandBuffer += currentString;
+
+            var finishStringPosition = this.currentCommandBuffer.search(this.commandFinishedString);
+            if(finishStringPosition !== -1){
+                var callback = this.commandListeners.shift();
+                callback(this.currentCommandBuffer.slice(0, finishStringPosition));
+
+                // Take the finished string off the buffer and process the next ouput
+                this.currentCommandBuffer = this.currentCommandBuffer.slice(
+                    finishStringPosition + this.commandFinishedString.length);
+                this.onReadable();
+            }
+        }
+
+        private getOutput(command: string): Promise<string>{
+            return new Promise(fulfil => {
+                this.stdin.write(command + "\n");
+                this.stdin.write(this.commandFinishedString);
+                this.commandListeners.push(output => {
+                    var commandPosition = output.search(command);
+                    fulfil(output.slice(commandPosition + 1));
+                })
+            })
         }
 
         private in(): Promise<string>{
@@ -160,7 +191,7 @@ module HaskellDebug {
             })
         }
 
-        private out(str: string){
+        private async out(str: string){
             this.stdin.write(str + "\n");
         }
     }
