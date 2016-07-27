@@ -1,10 +1,11 @@
 import cp = require("child_process");
 import stream = require("stream");
+import os = require("os");
 var Emitter = require("./Emitter");
 
 module HaskellDebug {
     function getPenultimateLine(str: string){
-        var lines = str.split("\n")
+        var lines = str.split("\n");
         return lines[lines.length - 1];
     }
 
@@ -81,7 +82,7 @@ module HaskellDebug {
 
         async getBindings(){
             var outputStr = await this.run(":show bindings");
-            var lines = outputStr.split("\n")
+            var lines = outputStr.split(os.EOL)
             return lines.slice(0, lines.length - 2);
         }
 
@@ -136,7 +137,7 @@ module HaskellDebug {
 
         private currentCommandBuffer = "";
         private commandListeners = <((output: string) => any)[]>[];
-        private commandFinishedString = "\"command_finish_o4uB1whagteqE8xBq9oq\"\n";
+        private commandFinishedString = "\"command_finish_o4uB1whagteqE8xBq9oq\"" + os.EOL;
 
         private onReadable(){
             var currentString = (this.stdout.read() || "").toString();
@@ -158,15 +159,17 @@ module HaskellDebug {
         private run(command: string, emitStatusChanges?: boolean): Promise<string>{
             emitStatusChanges = emitStatusChanges || false;
             return new Promise(fulfil => {
-                this.stdin.write(command + "\n");
+                this.stdin.write(command + os.EOL);
                 this.stdin.write(this.commandFinishedString);
                 this.commandListeners.push(output => {
                     console.log(command);
-                    var commandPosition = output.search(command);
-                    var promptPosition = output.lastIndexOf("\n") + 1;
-                    this.emitStatusChanges(output.slice(promptPosition)).then(() => {
-                        fulfil(output.slice(commandPosition + 1, promptPosition - 1));
-                    })
+                    var commandPosition = output.search(">");
+                    var promptPosition = output.lastIndexOf(os.EOL) + os.EOL.length;
+                    if(emitStatusChanges){
+                        this.emitStatusChanges(output.slice(promptPosition)).then(() => {
+                            fulfil(output.slice(commandPosition + os.EOL.length, promptPosition - os.EOL.length));
+                        })
+                    }
                 })
             })
         }
