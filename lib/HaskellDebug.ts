@@ -1,6 +1,6 @@
 import cp = require("child_process");
 import stream = require("stream");
-import atomAPI = require("atom");
+var Emitter = require("./Emitter");
 
 module HaskellDebug {
     function getPenultimateLine(str: string){
@@ -10,7 +10,7 @@ module HaskellDebug {
 
     export interface BreakInfo{
         filename: string;
-        range: TextBuffer.IRange;
+        range: number[][];
         onError?: boolean;
     }
 
@@ -40,7 +40,7 @@ module HaskellDebug {
           * debug-finished: (void)
           *     Emmited when the debugger has reached the end of the program
           */
-        public emitter = new atomAPI.Emitter();
+        public emitter = new Emitter();
 
         constructor(){
             this.ghci_cmd = cp.spawn("ghci");
@@ -94,15 +94,15 @@ module HaskellDebug {
                 pattern: /\[(?:[-\d]*: )?(.*):\((\d+),(\d+)\)-\((\d+),(\d+)\).*\].*> $/,
                 func: match => ({
                     filename: match[1],
-                    range: new atomAPI.Range([parseInt(match[2]) - 1, parseInt(match[3]) - 1],
-                        [parseInt(match[4]), parseInt(match[5])])
+                    range: [[parseInt(match[2]) - 1, parseInt(match[3]) - 1],
+                        [parseInt(match[4]), parseInt(match[5])]]
                 })
             },{
                 pattern: /\[(?:[-\d]*: )?(.*):(\d*):(\d*)-(\d*)\].*> $/,
                 func: match => ({
                         filename: match[1],
-                        range: new atomAPI.Range([parseInt(match[2]) - 1, parseInt(match[3]) - 1],
-                            [parseInt(match[2]), parseInt(match[4])])
+                        range: [[parseInt(match[2]) - 1, parseInt(match[3]) - 1],
+                            [parseInt(match[2]), parseInt(match[4])]]
                 })
             },{
                 pattern: /\[<exception thrown>\].*> $/,
@@ -155,11 +155,13 @@ module HaskellDebug {
             }
         }
 
-        private run(command: string, emitStatusChanges = false): Promise<string>{
+        private run(command: string, emitStatusChanges?: boolean): Promise<string>{
+            emitStatusChanges = emitStatusChanges || false;
             return new Promise(fulfil => {
                 this.stdin.write(command + "\n");
                 this.stdin.write(this.commandFinishedString);
                 this.commandListeners.push(output => {
+                    console.log(command);
                     var commandPosition = output.search(command);
                     var promptPosition = output.lastIndexOf("\n") + 1;
                     this.emitStatusChanges(output.slice(promptPosition)).then(() => {
