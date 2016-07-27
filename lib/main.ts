@@ -107,7 +107,7 @@ module.exports = {
             currentDebug.emitter.on("paused-on-exception", (errorMes: string) => {
                 console.log("Error: " + errorMes)
             })
-            currentDebug.loadModule(atom.workspace.getActiveEditor().getFileName());
+            currentDebug.loadModule(atom.workspace.getActiveTextEditor().getFileName());
             breakpoints.forEach(currentDebug["addBreakpoin" + "t"]);//HACK: lib.es6.d.ts is wrong for forEach
             currentDebug.startDebug(settings.breakOnError);
         })
@@ -122,7 +122,7 @@ module.exports = {
             }
         })
         atom.commands.add("atom-text-editor[data-grammar='source haskell']", "haskell:toggle-break-on-line", () => {
-            var currentLine = atom.workspace.getActiveEditor().getCursorBufferPosition().row;
+            var currentLine = atom.workspace.getActiveTextEditor().getCursorBufferPosition().row;
             /*
             currentDebug.addBreakpoint(
                 currentLine,
