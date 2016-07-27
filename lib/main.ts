@@ -109,7 +109,10 @@ module.exports = {
             })
             currentDebug.loadModule(atom.workspace.getActiveTextEditor().getFileName());
             breakpoints.forEach(currentDebug["addBreakpoin" + "t"]);//HACK: lib.es6.d.ts is wrong for forEach
-            currentDebug.startDebug(settings.breakOnError);
+            if(settings.breakOnError){
+                currentDebug.pauseOnException();
+            }
+            currentDebug.startDebug();
         })
         atom.commands.add("atom-text-editor[data-grammar='source haskell']", "haskell:debug-back", () => {
             if(currentDebug != null){

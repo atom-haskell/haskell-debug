@@ -51,30 +51,44 @@ module HaskellDebug {
             this.stderr.on("readable", () => console.log(`stderr: %c ${this.stderr.read().toString()}`, "color: red"))
         }
 
-        public async loadModule(name: string){
-            await this.out(`:load ${name}`);
+        public loadModule(name: string){
+            this.run(`:load ${name}`);
         }
 
-        public async pauseOnException(){
-            await this.out(":set -fbreak-on-exception");
+        public pauseOnException(){
+            this.run(":set -fbreak-on-exception");
         }
 
-        public async addBreakpoint(breakpoint: Breakpoint){
-            await this.out(`:break ${breakpoint.module} ${breakpoint.line}`)
+        public addBreakpoint(breakpoint: Breakpoint | string){
+            if(typeof breakpoint == "string")
+                this.run(`:break ${breakpoint}`);
+            else
+                this.run(`:break ${breakpoint.module} ${breakpoint.line}`);
+        }
+
+
+        public forward(){
+            this.run(":forward", true);
+        }
+
+        public back(){
+            this.run(":back", true);
+        }
+
+        async startDebug(){
+            await this.run(":trace main", true);
         }
 
         async getBindings(){
-            this.out(":show bindings");
-            var outputStr = await this.in();
+            var outputStr = await this.run(":show bindings");
             var lines = outputStr.split("\n")
             return lines.slice(0, lines.length - 2);
         }
 
         static pausedOnError = Symbol("Paused on Error");
         static finishedDebugging = Symbol("Finished debugging")
-        static notFinal = Symbol("Not final");
 
-        private readPrompt(stdOutput: string): BreakInfo | Symbol{
+        private parsePrompt(stdOutput: string): BreakInfo | Symbol{
             var breakInfoOb: BreakInfo;
             var patterns = <{pattern: RegExp; func: (match: string[]) => BreakInfo | Symbol}[]>[{
                 pattern: /\[(?:[-\d]*: )?(.*):\((\d+),(\d+)\)-\((\d+),(\d+)\).*\].*> $/,
@@ -103,54 +117,21 @@ module HaskellDebug {
                     return pattern.func(matchResult);
                 }
             }
-            return HaskellDebug.notFinal;
+            throw new Error("Cannot read prompt: \n" + stdOutput);
         }
 
-        public forward(){
-            this.observeInput();
-            this.out(":forward");
-        }
+        private async emitStatusChanges(prompt: string){
+            var result = this.parsePrompt(prompt);
 
-        public back(){
-            this.observeInput()
-            this.out(":back");
-        }
-
-        private async observeInput(){
-            this.stdout.cork();
-            var str = await this.in();
-            var input = this.readPrompt(str.toString());
-
-            if(input == HaskellDebug.pausedOnError){
-                this.stdout.cork();
-                this.stdout.pause();
-                this.out("print _exception")
-                this.stdout.once("data", (newData) => {/*
-                    var errorMes = getPenultimateLine(newData.toString());
-                    this.emitter.emit("paused-on-exception", errorMes);*/
-                    //Doesn't work at the moment - print _exception doesn't work
-                    //TODO: make work
-
-                    this.observeInput();
-                    this.out(":back");
-                })
-                this.stdout.unpause();
+            if(result == HaskellDebug.pausedOnError) {
+                var exceptionString = await this.run("print _exception");
             }
-            else if(input == HaskellDebug.finishedDebugging){
+            else if(result == HaskellDebug.finishedDebugging){
                 this.emitter.emit("debug-finished", undefined);
             }
-            else if(input == HaskellDebug.notFinal){
-                this.observeInput();
-            }
             else{
-                this.emitter.emit("line-changed", input);
+                this.emitter.emit("line-changed", result);
             }
-        }
-
-        async startDebug(pauseOnException: boolean){
-            await this.in();
-            this.out(":trace main")
-            this.observeInput();
         }
 
         private currentCommandBuffer = "";
@@ -174,25 +155,18 @@ module HaskellDebug {
             }
         }
 
-        private getOutput(command: string): Promise<string>{
+        private run(command: string, emitStatusChanges = false): Promise<string>{
             return new Promise(fulfil => {
                 this.stdin.write(command + "\n");
                 this.stdin.write(this.commandFinishedString);
                 this.commandListeners.push(output => {
                     var commandPosition = output.search(command);
-                    fulfil(output.slice(commandPosition + 1));
+                    var promptPosition = output.lastIndexOf("\n") + 1;
+                    this.emitStatusChanges(output.slice(promptPosition)).then(() => {
+                        fulfil(output.slice(commandPosition + 1, promptPosition - 1));
+                    })
                 })
             })
-        }
-
-        private in(): Promise<string>{
-            return new Promise((fulfil) => {
-                this.stdout.once("data", (data: Buffer) => fulfil(data.toString()))
-            })
-        }
-
-        private async out(str: string){
-            this.stdin.write(str + "\n");
         }
     }
 }
