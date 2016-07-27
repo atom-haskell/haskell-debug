@@ -23,7 +23,6 @@
     "buildOnSave": false,
     "files": [
         "lib/common.d.ts",
-        "lib/Emitter.ts",
         "lib/HaskellDebug.ts",
         "lib/main.ts",
         "newTypings/atom.d.ts",

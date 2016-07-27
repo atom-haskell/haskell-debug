@@ -15,11 +15,6 @@ module HaskellDebug {
         onError?: boolean;
     }
 
-    export interface Breakpoint{
-        line: number;
-        module: string;
-    }
-
     export class HaskellDebug{
         private ghci_cmd: cp.ChildProcess;
         stdout: stream.Readable;
@@ -64,7 +59,7 @@ module HaskellDebug {
             if(typeof breakpoint == "string")
                 this.run(`:break ${breakpoint}`);
             else
-                this.run(`:break ${breakpoint.module} ${breakpoint.line}`);
+                this.run(`:break ${breakpoint.file} ${breakpoint.line}`);
         }
 
 

@@ -63,25 +63,30 @@ function toggleBreakpoint(lineNumber: number){
         })
 
         breakpoints.set(lineNumber, {
-            line: lineNumber,
-            file: te.getFileName(),
+            line: lineNumber + 1,
+            file: te.getPath(),
             marker: breakpointMarker
         })
     }
 }
 
 function setUpBreakpointsUI(){
-    var te = atom.workspace.getActiveTextEditor();
-    var lineNumbersModal = te.gutterWithName("line-number");
-    var view = <HTMLElement>atom.views.getView(lineNumbersModal);
+    setTimeout(() => {
+        var te = atom.workspace.getActiveTextEditor();
+        var lineNumbersModal = te.gutterWithName("line-number");
+        var view = <HTMLElement>atom.views.getView(lineNumbersModal);
+        view.addEventListener("click", ev => {
+            var scopes = te.getRootScopeDescriptor().scopes;
+            if(scopes.length == 1 && scopes[0] == "source.haskell"){
+                var lineNumber: number = parseInt(ev["path"][0].dataset.bufferRow);
+                toggleBreakpoint(lineNumber);
+            }
+        })
+    }, 0)
+}
 
-    view.addEventListener("click", ev => {
-        var scopes = te.getRootScopeDescriptor().scopes;
-        if(scopes.length == 1 && scopes[0] == "source.haskell"){
-            var lineNumber: number = parseInt(ev["path"][0].dataset.bufferRow);
-            toggleBreakpoint(lineNumber);
-        }
-    })
+function debuggerEnd(){
+    //TODO: this
 }
 
 var currentDebug: HaskellDebug = null;
@@ -92,11 +97,11 @@ module.exports = {
         return reloader({pkg:"haskell-debug",files:["package.json", "lib/main.js", "lib/HaskellDebug.js"],folders:["lib/"]})
     },
     activate: () => {
-        setUpBreakpointsUI();
         atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {
             var scopes = te.getRootScopeDescriptor().scopes;
             if(scopes.length == 1 &&
                 scopes[0] == "source.haskell"){
+                    setUpBreakpointsUI();
             }
         })
         atom.commands.add("atom-text-editor[data-grammar='source haskell']", "haskell:debug", () => {
@@ -107,8 +112,15 @@ module.exports = {
             currentDebug.emitter.on("paused-on-exception", (errorMes: string) => {
                 console.log("Error: " + errorMes)
             })
-            currentDebug.loadModule(atom.workspace.getActiveTextEditor().getFileName());
-            breakpoints.forEach(currentDebug["addBreakpoin" + "t"]);//HACK: lib.es6.d.ts is wrong for forEach
+            currentDebug.emitter.on("debug-finished", () => debuggerEnd())
+            var fileToDebug = atom.workspace.getActiveTextEditor().getPath()
+            currentDebug.loadModule(fileToDebug);
+            breakpoints.forEach(ob => {
+                if(ob.file == fileToDebug)
+                    currentDebug.addBreakpoint(ob.line.toString());
+                else
+                    currentDebug.addBreakpoint(ob) //TODO: make this work properly
+            });
             if(settings.breakOnError){
                 currentDebug.pauseOnException();
             }
@@ -161,3 +173,16 @@ module.exports = {
         toolBar.removeItems();
     }
 }
+
+
+interface I{
+
+}
+
+function f(x: string|I){
+
+}
+
+var p: I;
+
+f(p)
