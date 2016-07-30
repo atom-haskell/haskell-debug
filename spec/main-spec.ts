@@ -8,7 +8,6 @@ describe("breakpoints", () => {
     session.addBreakpoint("main");
     var line_changed = false;
     it("breaks at breakpoints", function (done){
-        this.timeout(0);
         session.emitter.on("line-changed", (info: HaskellDebug.BreakInfo) => {
             done();
         })
