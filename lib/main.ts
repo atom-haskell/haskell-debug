@@ -3,100 +3,100 @@ import _HaskellDebug = require("./HaskellDebug");
 import HaskellDebug = _HaskellDebug.HaskellDebug;
 import BreakInfo = _HaskellDebug.BreakInfo;
 
-var settings = {
-    breakOnError: true
-}
-
-var currentMarker: AtomCore.IDisplayBufferMarker = null;
-async function hightlightLine(info: BreakInfo){
-    var editor = await atom.workspace.open(info.filename, {searchAllPanes: true});
-
-    if(currentMarker == null){
-        currentMarker = editor.markBufferRange(info.range, {invalidate: 'never'})
-        editor.decorateMarker(currentMarker, {
-            type: "highlight",
-            class: "highlight-green"
-        })
-        editor.decorateMarker(currentMarker, {
-            type: "line-number",
-            class: "highlight-green"
-        })
-        editor.decorateMarker(currentMarker, {
-            type: "gutter",
-            class: "highlight-green"
-        })
+module Main{
+    var settings = {
+        breakOnError: true
     }
-    else{
-        currentMarker.setBufferRange(info.range, {});
+
+    var currentMarker: AtomCore.IDisplayBufferMarker = null;
+    async function hightlightLine(info: BreakInfo){
+        var editor = await atom.workspace.open(info.filename, {searchAllPanes: true});
+
+        if(currentMarker == null){
+            currentMarker = editor.markBufferRange(info.range, {invalidate: 'never'})
+            editor.decorateMarker(currentMarker, {
+                type: "highlight",
+                class: "highlight-green"
+            })
+            editor.decorateMarker(currentMarker, {
+                type: "line-number",
+                class: "highlight-green"
+            })
+            editor.decorateMarker(currentMarker, {
+                type: "gutter",
+                class: "highlight-green"
+            })
+        }
+        else{
+            currentMarker.setBufferRange(info.range, {});
+        }
     }
-}
 
-var breakpoints: Map<number, Breakpoint> = new Map();
+    var breakpoints: Map<number, Breakpoint> = new Map();
 
-var sourceButton = null
-function getReplButton(){
-    var cont = document.createElement("div");
-    cont.innerHTML = '<ide-haskell-button data-caption="console" data-count="0" class="active"></ide-haskell-button>'
-    sourceButton = cont.children[0];
-    return sourceButton;
-}
-
-var replActive = false;
-function replButtonClicked(){
-    if(replActive){
-
+    var sourceButton = null
+    function getReplButton(){
+        var cont = document.createElement("div");
+        cont.innerHTML = '<ide-haskell-button data-caption="console" data-count="0" class="active"></ide-haskell-button>'
+        sourceButton = cont.children[0];
+        return sourceButton;
     }
-}
 
-function toggleBreakpoint(lineNumber: number){
-    var te = atom.workspace.getActiveTextEditor();
+    var replActive = false;
+    function replButtonClicked(){
+        if(replActive){
 
-    if(breakpoints.has(lineNumber)){
-        te.destroyMarker(breakpoints.get(lineNumber).marker.id);
-        breakpoints.delete(lineNumber);
+        }
     }
-    else{
-        let breakpointMarker = te.markBufferRange(new atomAPI.Range([lineNumber, 0], [lineNumber + 1, 0]));
-        te.decorateMarker(breakpointMarker, {
-            type: "line-number",
-            class: "breakpoint"
-        })
 
-        breakpoints.set(lineNumber, {
-            line: lineNumber + 1,
-            file: te.getPath(),
-            marker: breakpointMarker
-        })
-    }
-}
-
-function setUpBreakpointsUI(){
-    setTimeout(() => {
+    function toggleBreakpoint(lineNumber: number){
         var te = atom.workspace.getActiveTextEditor();
-        var lineNumbersModal = te.gutterWithName("line-number");
-        var view = <HTMLElement>atom.views.getView(lineNumbersModal);
-        view.addEventListener("click", ev => {
-            var scopes = te.getRootScopeDescriptor().scopes;
-            if(scopes.length == 1 && scopes[0] == "source.haskell"){
-                var lineNumber: number = parseInt(ev["path"][0].dataset.bufferRow);
-                toggleBreakpoint(lineNumber);
-            }
-        })
-    }, 0)
-}
 
-function debuggerEnd(){
-    //TODO: this
-}
+        if(breakpoints.has(lineNumber)){
+            te.destroyMarker(breakpoints.get(lineNumber).marker.id);
+            breakpoints.delete(lineNumber);
+        }
+        else{
+            let breakpointMarker = te.markBufferRange(new atomAPI.Range([lineNumber, 0], [lineNumber + 1, 0]));
+            te.decorateMarker(breakpointMarker, {
+                type: "line-number",
+                class: "breakpoint"
+            })
 
-var currentDebug: HaskellDebug = null;
+            breakpoints.set(lineNumber, {
+                line: lineNumber + 1,
+                file: te.getPath(),
+                marker: breakpointMarker
+            })
+        }
+    }
 
-var toolBar;
-module.exports = {
-    consumeAutoreload: (reloader) => {
+    function setUpBreakpointsUI(){
+        setTimeout(() => {
+            var te = atom.workspace.getActiveTextEditor();
+            var lineNumbersModal = te.gutterWithName("line-number");
+            var view = <HTMLElement>atom.views.getView(lineNumbersModal);
+            view.addEventListener("click", ev => {
+                var scopes = te.getRootScopeDescriptor().scopes;
+                if(scopes.length == 1 && scopes[0] == "source.haskell"){
+                    var lineNumber: number = parseInt(ev["path"][0].dataset.bufferRow);
+                    toggleBreakpoint(lineNumber);
+                }
+            })
+        }, 0)
+    }
+
+    function debuggerEnd(){
+        //TODO: this
+    }
+
+    var currentDebug: HaskellDebug = null;
+
+    var toolBar;
+    export function consumeAutoreload(reloader) {
         return reloader({pkg:"haskell-debug",files:["package.json", "lib/main.js", "lib/HaskellDebug.js"],folders:["lib/"]})
-    },
-    activate: () => {
+    }
+    export function activate(){
         atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {
             var scopes = te.getRootScopeDescriptor().scopes;
             if(scopes.length == 1 &&
@@ -146,11 +146,11 @@ module.exports = {
             */
             //toggleBreakpointOnLine(currentLine);
         })
-    },
-    consumeUpi: upi => {
+    }
+    export function consumeUpi(upi) {
         //upi.addPanelControl(getReplButton(), ["click", () => replButtonClicked()]);
-    },
-    consumeToolBar: Toolbar => {
+    }
+    export function consumeToolBar(Toolbar) {
         var toolBar = Toolbar("haskell-debug");
         toolBar.addButton({
             icon: 'bug',
@@ -168,21 +168,10 @@ module.exports = {
             tooltip: 'Debug forward'
         })
         return toolBar;
-    },
-    deactivate: () => {
+    }
+    export function deactivate() {
         toolBar.removeItems();
     }
 }
 
-
-interface I{
-
-}
-
-function f(x: string|I){
-
-}
-
-var p: I;
-
-f(p)
+export = Main
