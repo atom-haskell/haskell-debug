@@ -93,9 +93,7 @@ module Main{
     var currentDebug: HaskellDebug = null;
 
     var toolBar;
-    export function consumeAutoreload(reloader) {
-        return reloader({pkg:"haskell-debug",files:["package.json", "lib/main.js", "lib/HaskellDebug.js"],folders:["lib/"]})
-    }
+
     export function activate(){
         atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {
             var scopes = te.getRootScopeDescriptor().scopes;
@@ -147,9 +145,11 @@ module Main{
             //toggleBreakpointOnLine(currentLine);
         })
     }
+
     export function consumeUpi(upi) {
         //upi.addPanelControl(getReplButton(), ["click", () => replButtonClicked()]);
     }
+
     export function consumeToolBar(Toolbar) {
         var toolBar = Toolbar("haskell-debug");
         toolBar.addButton({
@@ -169,6 +169,7 @@ module Main{
         })
         return toolBar;
     }
+
     export function deactivate() {
         toolBar.removeItems();
     }
