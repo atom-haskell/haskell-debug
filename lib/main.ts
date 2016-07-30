@@ -117,15 +117,8 @@ module Main{
                 currentDebug.forward();
             }
         })
-        atom.commands.add("atom-text-editor[data-grammar='source haskell']", "haskell:toggle-break-on-line", () => {
-            var currentLine = atom.workspace.getActiveTextEditor().getCursorBufferPosition().row;
-            /*
-            currentDebug.addBreakpoint(
-                currentLine,
-                atom.workspace.getActiveEditor().getFileName()
-            )
-            */
-            //toggleBreakpointOnLine(currentLine);
+        atom.commands.add("atom-text-editor[data-grammar='source haskell']", "haskell:toggle-breakpoint", () => {
+            toggleBreakpoint(atom.workspace.getActiveTextEditor().getCursorBufferPosition().row);
         })
     }
 }
