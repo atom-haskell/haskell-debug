@@ -8,46 +8,31 @@ module Main{
         breakOnError: true
     }
 
-    var currentMarker: AtomCore.IDisplayBufferMarker = null;
+    var debugLineMarker: AtomCore.IDisplayBufferMarker = null;
     async function hightlightLine(info: BreakInfo){
         var editor = await atom.workspace.open(info.filename, {searchAllPanes: true});
 
-        if(currentMarker == null){
-            currentMarker = editor.markBufferRange(info.range, {invalidate: 'never'})
-            editor.decorateMarker(currentMarker, {
+        if(debugLineMarker == null){
+            debugLineMarker = editor.markBufferRange(info.range, {invalidate: 'never'})
+            editor.decorateMarker(debugLineMarker, {
                 type: "highlight",
                 class: "highlight-green"
             })
-            editor.decorateMarker(currentMarker, {
+            editor.decorateMarker(debugLineMarker, {
                 type: "line-number",
                 class: "highlight-green"
             })
-            editor.decorateMarker(currentMarker, {
+            editor.decorateMarker(debugLineMarker, {
                 type: "gutter",
                 class: "highlight-green"
             })
         }
         else{
-            currentMarker.setBufferRange(info.range, {});
+            debugLineMarker.setBufferRange(info.range, {});
         }
     }
 
     var breakpoints: Map<number, Breakpoint> = new Map();
-
-    var sourceButton = null
-    function getReplButton(){
-        var cont = document.createElement("div");
-        cont.innerHTML = '<ide-haskell-button data-caption="console" data-count="0" class="active"></ide-haskell-button>'
-        sourceButton = cont.children[0];
-        return sourceButton;
-    }
-
-    var replActive = false;
-    function replButtonClicked(){
-        if(replActive){
-
-        }
-    }
 
     function toggleBreakpoint(lineNumber: number){
         var te = atom.workspace.getActiveTextEditor();
@@ -91,8 +76,6 @@ module Main{
     }
 
     var currentDebug: HaskellDebug = null;
-
-    var toolBar;
 
     export function activate(){
         atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {
@@ -144,34 +127,6 @@ module Main{
             */
             //toggleBreakpointOnLine(currentLine);
         })
-    }
-
-    export function consumeUpi(upi) {
-        //upi.addPanelControl(getReplButton(), ["click", () => replButtonClicked()]);
-    }
-
-    export function consumeToolBar(Toolbar) {
-        var toolBar = Toolbar("haskell-debug");
-        toolBar.addButton({
-            icon: 'bug',
-            callback: 'haskell:debug',
-            tooltip: 'Debug'
-        })
-        toolBar.addButton({
-            icon: 'arrow-small-left',
-            callback: 'haskell:debug-back',
-            tooltip: 'Debug back'
-        })
-        toolBar.addButton({
-            icon: 'arrow-small-right',
-            callback: 'haskell:debug-forward',
-            tooltip: 'Debug forward'
-        })
-        return toolBar;
-    }
-
-    export function deactivate() {
-        toolBar.removeItems();
     }
 }
 
