@@ -25,6 +25,7 @@
         "lib/common.d.ts",
         "lib/HaskellDebug.ts",
         "lib/main.ts",
+        "lib/views/DebugView.ts",
         "newTypings/atom.d.ts",
         "spec/main-spec.ts",
         "typings/atom/atom.d.ts",

@@ -1,5 +1,6 @@
 import atomAPI = require("atom");
 import _HaskellDebug = require("./HaskellDebug");
+import DebugView = require("./views/DebugView");
 import HaskellDebug = _HaskellDebug.HaskellDebug;
 import BreakInfo = _HaskellDebug.BreakInfo;
 
@@ -33,7 +34,6 @@ module Main{
     }
 
     var breakpoints: Map<number, Breakpoint> = new Map();
-
     function toggleBreakpoint(lineNumber: number){
         var te = atom.workspace.getActiveTextEditor();
 
@@ -71,11 +71,19 @@ module Main{
         }, 0)
     }
 
-    function debuggerEnd(){
-        //TODO: this
+    export function displayDebuggingToolbar(){
+        atom.workspace.addTopPanel({
+            item: debugView.element
+        });
     }
 
-    var currentDebug: HaskellDebug = null;
+    function debuggerEnd(){
+        debugLineMarker.destroy();
+        debugLineMarker = null;
+    }
+
+    export var currentDebug: HaskellDebug = null;
+    export var debugView = new DebugView();
 
     export function activate(){
         atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {

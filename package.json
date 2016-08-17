@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": { 
+  "repository": {
     "type": "git",
     "url": "git+https://github.com/ThomasHickman/haskell-debug.git"
   },
@@ -25,19 +25,22 @@
   },
   "consumedServices": {
     "tool-bar": {
-        "versions": {
+      "versions": {
         "^0.1.0": "consumeToolBar"
-        }
+      }
     },
     "ide-haskell-upi": {
-        "versions": {
-          "0.0.1": "consumeUpi"
-        }
+      "versions": {
+        "0.0.1": "consumeUpi"
+      }
     },
     "autoreload": {
       "versions": {
         "^0.0.1": "consumeAutoreload"
       }
     }
+  },
+  "dependencies": {
+    "draggable": "^4.0.4"
   }
 }
