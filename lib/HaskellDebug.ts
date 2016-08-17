@@ -63,6 +63,7 @@ module HaskellDebug {
                     console.log(`stderr: %c ${stderrOutput.toString()}`, "color: red")
                 }
             })
+            this.run(`:set prompt "%s> ${this.commandFinishedString}"`);
         }
 
         public loadModule(name: string){
@@ -163,7 +164,7 @@ module HaskellDebug {
 
         private currentCommandBuffer = "";
         private commandListeners = <((output: string) => any)[]>[];
-        private commandFinishedString = "\"command_finish_o4uB1whagteqE8xBq9oq\"" + os.EOL;
+        private commandFinishedString = "command_finish_o4uB1whagteqE8xBq9oq";
 
         private onReadable(){
             var currentString = (this.stdout.read() || "").toString();
@@ -189,17 +190,29 @@ module HaskellDebug {
             emitStatusChanges = emitStatusChanges || false;
             return new Promise(fulfil => {
                 this.stdin.write(command + os.EOL);
-                this.stdin.write(this.commandFinishedString);
                 this.commandListeners.push(output => {
                     if(atom.devMode)
                         console.log(command);
 
-                    var commandPosition = output.search(">");
-                    var promptPosition = output.lastIndexOf(os.EOL) + os.EOL.length;
+                    var lastEndOfLine = output.lastIndexOf(os.EOL);
+
+                    if(lastEndOfLine == -1){
+                        /*i.e. no output has been produced*/
+                        if(emitStatusChanges){
+                            this.emitStatusChanges(output.slice(0, output.length))
+                        }
+                        return;
+                    }
+
+                    var promptBeginPosition = lastEndOfLine + os.EOL.length;
+
                     if(emitStatusChanges){
-                        this.emitStatusChanges(output.slice(promptPosition)).then(() => {
-                            fulfil(output.slice(commandPosition + os.EOL.length, promptPosition - os.EOL.length));
+                        this.emitStatusChanges(output.slice(promptBeginPosition, output.length)).then(() => {
+                            fulfil(output.slice(0, lastEndOfLine));
                         })
+                    }
+                    else{
+                        fulfil(output.slice(0, lastEndOfLine));
                     }
                 })
             })
