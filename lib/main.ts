@@ -72,6 +72,7 @@ module Main{
     }
 
     export function displayDebuggingToolbar(){
+        debugView = new DebugView();
         atom.workspace.addTopPanel({
             item: debugView.element
         });
@@ -83,7 +84,7 @@ module Main{
     }
 
     export var currentDebug: HaskellDebug = null;
-    export var debugView = new DebugView();
+    export var debugView: DebugView;
 
     export function activate(){
         atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {

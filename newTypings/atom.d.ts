@@ -37,6 +37,22 @@ declare module AtomCore{
         observeTextEditors(callback: (editor: IEditor) => any): Disposable;
     }
 
+    interface TooltipOptions{
+        /*More options at http://getbootstrap.com/javascript/#tooltips-options*/
+        title: string | (() => any);
+        trigger?: "click" | "hover" | "focus" | "manual";
+        keyBindingCommand?: string;
+        keyBindingTarget?: HTMLElement;
+    }
+
+    interface IAtom {
+        tooltips: ITooltipManager;
+    }
+
+    interface ITooltipManager{
+        add(target: HTMLElement, options: TooltipOptions): Disposable;
+    }
+
     interface IViewRegistry {
 		getView(selector: any): HTMLElement;
 	}

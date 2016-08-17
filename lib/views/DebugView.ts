@@ -11,6 +11,10 @@ class DebugView {
         button.className = "btn btn-primary icon";
         button.classList.add("icon-" + icon);
 
+        atom.tooltips.add(button, {
+            title: description
+        })
+
         this.container.appendChild(button);
     }
 
