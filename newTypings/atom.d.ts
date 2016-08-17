@@ -45,6 +45,10 @@ declare module AtomCore{
         keyBindingTarget?: HTMLElement;
     }
 
+    interface Panel {
+        destroy();
+    }
+
     interface IAtom {
         tooltips: ITooltipManager;
     }

@@ -1,11 +1,22 @@
 import Draggable = require("draggable");
+import atomAPI = require("atom");
+
+interface DebugViewEmitter extends atomAPI.Emitter{
+    on(eventName: "forward" | "back" | "continue" | "stop", handler: () => any);
+}
 
 class DebugView {
     element: HTMLElement;
     private container: HTMLElement;
     private draggable: Draggable;
 
-    private addButton(description: string, icon: string, onclick?: () => any){
+    /** Event Handler
+      *
+      * Events corrispond to the button pressed. These are: forward, back, continue or stop.
+      */
+    public emitter: DebugViewEmitter = new atomAPI.Emitter();
+
+    private addButton(description: string, icon: string, eventName: string){
         var button = document.createElement("button");
 
         button.className = "btn btn-primary icon";
@@ -14,6 +25,8 @@ class DebugView {
         atom.tooltips.add(button, {
             title: description
         })
+
+        button.addEventListener("click", () => this.emitter.emit(eventName, null));
 
         this.container.appendChild(button);
     }
@@ -28,10 +41,10 @@ class DebugView {
 
         this.element.appendChild(this.container);
 
-        this.addButton("Step in", "arrow-down")
-        this.addButton("Step out", "arrow-up")
-        this.addButton("Continue", "playback-play")
-        this.addButton("Stop", "primitive-square");
+        this.addButton("Go forward", "arrow-down", "forward")
+        this.addButton("Go back", "arrow-up", "back")
+        this.addButton("Continue", "playback-play", "continue")
+        this.addButton("Stop", "primitive-square", "stop");
 
         this.draggable = new Draggable(this.element);
         this.draggable.set(atom.workspace.getActiveTextEditor()["width"] / 2 - 87/*size of the element*/, 30);

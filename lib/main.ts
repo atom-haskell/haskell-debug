@@ -73,28 +73,29 @@ module Main{
 
     export function displayDebuggingToolbar(){
         debugView = new DebugView();
-        atom.workspace.addTopPanel({
+        debugPanel = atom.workspace.addTopPanel({
             item: debugView.element
         });
+
+        debugView.emitter.on("back", () => commands["debug-back"]())
+        debugView.emitter.on("forward", () => commands["debug-forward"]())
+        debugView.emitter.on("continue", () => commands["debug-continue"]())
+        debugView.emitter.on("stop", () => commands["debug-stop"]())
     }
 
     function debuggerEnd(){
         debugLineMarker.destroy();
         debugLineMarker = null;
+
+        debugPanel.destroy();
     }
 
     export var currentDebug: HaskellDebug = null;
     export var debugView: DebugView;
+    export var debugPanel: AtomCore.Panel;
 
-    export function activate(){
-        atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {
-            var scopes = te.getRootScopeDescriptor().scopes;
-            if(scopes.length == 1 &&
-                scopes[0] == "source.haskell"){
-                    setUpBreakpointsUI();
-            }
-        })
-        atom.commands.add("atom-text-editor[data-grammar='source haskell']", "haskell:debug", () => {
+    export var commands = {
+        "debug": () => {
             currentDebug = new HaskellDebug();
             currentDebug.emitter.on("line-changed", (info: BreakInfo) => {
                 hightlightLine(info);
@@ -115,20 +116,46 @@ module Main{
                 currentDebug.pauseOnException();
             }
             currentDebug.startDebug();
-        })
-        atom.commands.add("atom-text-editor[data-grammar='source haskell']", "haskell:debug-back", () => {
+            displayDebuggingToolbar();
+        },
+        "debug-back": () => {
             if(currentDebug != null){
                 currentDebug.back();
             }
-        })
-        atom.commands.add("atom-text-editor[data-grammar='source haskell']", "haskell:debug-forward", () => {
+        },
+        "debug-forward": () => {
             if(currentDebug != null){
                 currentDebug.forward();
             }
-        })
-        atom.commands.add("atom-text-editor[data-grammar='source haskell']", "haskell:toggle-breakpoint", () => {
+        },
+        "debug-stop": () => {
+            if(currentDebug != null){
+                currentDebug.stop(); // this will trigger debug-finished event
+            }
+        },
+        "debug-continue": () => {
+            if(currentDebug != null){
+                currentDebug.continue();
+            }
+        },
+        "toggle-breakpoint": () => {
             toggleBreakpoint(atom.workspace.getActiveTextEditor().getCursorBufferPosition().row);
+        }
+    }
+
+    export function activate(){
+        atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {
+            var scopes = te.getRootScopeDescriptor().scopes;
+            if(scopes.length == 1 &&
+                scopes[0] == "source.haskell"){
+                    setUpBreakpointsUI();
+            }
         })
+        for(var command of Object.keys(commands)){
+            atom.commands.add("atom-text-editor[data-grammar='source haskell']",
+                              "haskell:" + command,
+                              commands[command]);
+        }
     }
 }
 

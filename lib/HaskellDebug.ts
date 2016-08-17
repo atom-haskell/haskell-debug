@@ -1,6 +1,7 @@
 import cp = require("child_process");
 import stream = require("stream");
 import os = require("os");
+import atomAPI = require("atom");
 var Emitter = require("./Emitter");
 
 module HaskellDebug {
@@ -13,6 +14,16 @@ module HaskellDebug {
         filename: string;
         range: number[][];
         onError?: boolean;
+    }
+
+    export interface HaskellDebugEmitter extends atomAPI.Emitter{
+        on(eventName: "paused-on-exception", handler: (name: string) => any): AtomCore.Disposable;
+        on(eventName: "line-changed", handler: (info: BreakInfo) => any): AtomCore.Disposable;
+        on(eventName: "debug-finished", handler: () => any): AtomCore.Disposable;
+
+        emit(eventName: "paused-on-exception", value: string): void;
+        emit(eventName: "line-changed", value: BreakInfo): void;
+        emit(eventName: "debug-finished", value: any): void;
     }
 
     export class HaskellDebug{
@@ -36,7 +47,7 @@ module HaskellDebug {
           * debug-finished: (void)
           *     Emmited when the debugger has reached the end of the program
           */
-        public emitter = new Emitter();
+        public emitter: HaskellDebugEmitter = new Emitter();
 
         constructor(){
             this.ghci_cmd = cp.spawn("ghci");
@@ -69,6 +80,15 @@ module HaskellDebug {
 
         public back(){
             this.run(":back", true);
+        }
+
+        public stop() {
+            this.run(":quit");
+            this.emitter.emit("debug-finished", null);
+        }
+
+        public continue() {
+            this.run("continue", true);
         }
 
         async startDebug(){
@@ -126,7 +146,7 @@ module HaskellDebug {
                 this.emitter.emit("debug-finished", undefined);
             }
             else{
-                this.emitter.emit("line-changed", result);
+                this.emitter.emit("line-changed", <BreakInfo>result);
             }
         }
 
