@@ -77,6 +77,7 @@ module Main{
             item: debugView.element
         });
 
+        debugView.emitter.on("step", () => commands["debug-step"]())
         debugView.emitter.on("back", () => commands["debug-back"]())
         debugView.emitter.on("forward", () => commands["debug-forward"]())
         debugView.emitter.on("continue", () => commands["debug-continue"]())
@@ -126,6 +127,11 @@ module Main{
         "debug-forward": () => {
             if(currentDebug != null){
                 currentDebug.forward();
+            }
+        },
+        "debug-step": () => {
+            if(currentDebug != null){
+                currentDebug.step();
             }
         },
         "debug-stop": () => {

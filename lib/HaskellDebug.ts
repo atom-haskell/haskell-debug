@@ -60,7 +60,7 @@ module HaskellDebug {
                     var stderrOutput = this.stderr.read();
                     if(stderrOutput === null)
                         return; // this is the end of the input stream
-                    console.log(`stderr: %c ${this.stderr.read().toString()}`, "color: red")
+                    console.log(`stderr: %c ${stderrOutput.toString()}`, "color: red")
                 }
             })
         }
@@ -87,6 +87,10 @@ module HaskellDebug {
 
         public back(){
             this.run(":back", true);
+        }
+
+        public step(){
+            this.run(":step", true);
         }
 
         public stop() {
@@ -163,7 +167,7 @@ module HaskellDebug {
 
         private onReadable(){
             var currentString = (this.stdout.read() || "").toString();
-            
+
             if(atom.devMode)
                 console.log(currentString);
 

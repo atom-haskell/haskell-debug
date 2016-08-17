@@ -41,9 +41,10 @@ class DebugView {
 
         this.element.appendChild(this.container);
 
-        this.addButton("Go forward", "arrow-down", "forward")
-        this.addButton("Go back", "arrow-up", "back")
-        this.addButton("Continue", "playback-play", "continue")
+        this.addButton("Step forward", "arrow-down", "step");
+        this.addButton("Back in history", "chevron-up", "back");
+        this.addButton("Forward in history", "chevron-down", "forward");
+        this.addButton("Continue", "playback-play", "continue");
         this.addButton("Stop", "primitive-square", "stop");
 
         this.draggable = new Draggable(this.element);
