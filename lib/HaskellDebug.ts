@@ -55,7 +55,14 @@ module HaskellDebug {
             this.stdin = this.ghci_cmd.stdin;
             this.stderr = this.ghci_cmd.stderr;
             this.stdout.on("readable", () => this.onReadable());
-            this.stderr.on("readable", () => console.log(`stderr: %c ${this.stderr.read().toString()}`, "color: red"))
+            this.stderr.on("readable", () => {
+                if(atom.devMode){
+                    var stderrOutput = this.stderr.read();
+                    if(stderrOutput === null)
+                        return; // this is the end of the input stream
+                    console.log(`stderr: %c ${this.stderr.read().toString()}`, "color: red")
+                }
+            })
         }
 
         public loadModule(name: string){
@@ -156,7 +163,10 @@ module HaskellDebug {
 
         private onReadable(){
             var currentString = (this.stdout.read() || "").toString();
-            console.log(currentString);
+            
+            if(atom.devMode)
+                console.log(currentString);
+
             this.currentCommandBuffer += currentString;
 
             var finishStringPosition = this.currentCommandBuffer.search(this.commandFinishedString);
@@ -177,7 +187,9 @@ module HaskellDebug {
                 this.stdin.write(command + os.EOL);
                 this.stdin.write(this.commandFinishedString);
                 this.commandListeners.push(output => {
-                    console.log(command);
+                    if(atom.devMode)
+                        console.log(command);
+
                     var commandPosition = output.search(">");
                     var promptPosition = output.lastIndexOf(os.EOL) + os.EOL.length;
                     if(emitStatusChanges){
