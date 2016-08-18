@@ -25,7 +25,7 @@
             "name": "Test",
             "type": "node",
             "request": "launch",
-            "program": "C:\\Users\\Hickman\\AppData\\Roaming\\npm\\node_modules\\mocha\\bin\\_mocha",
+            "program": "C:\\Users\\Hickman\\AppData\\Roaming\\npm\\node_modules\\jasmine\\bin\\jasmine.js",
             "stopOnEntry": false,
             "args": ["./spec/main-spec.js"],
             "cwd": "${workspaceRoot}",

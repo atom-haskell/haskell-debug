@@ -4,7 +4,7 @@
   "description": "Implements a haskell debugger in atom using ghci",
   "main": "lib/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jasmine"
   },
   "repository": {
     "type": "git",
@@ -20,27 +20,11 @@
     "url": "https://github.com/ThomasHickman/haskell-debug/issues"
   },
   "homepage": "https://github.com/ThomasHickman/haskell-debug#readme",
-  "package-dependencies": {
-    "tool-bar": "^0.2.0"
-  },
-  "consumedServices": {
-    "tool-bar": {
-      "versions": {
-        "^0.1.0": "consumeToolBar"
-      }
-    },
-    "ide-haskell-upi": {
-      "versions": {
-        "0.0.1": "consumeUpi"
-      }
-    },
-    "autoreload": {
-      "versions": {
-        "^0.0.1": "consumeAutoreload"
-      }
-    }
-  },
+  "atomTestRunner": "jasmine",
   "dependencies": {
     "draggable": "^4.0.4"
+  },
+  "devDependencies": {
+    "jasmine": "^2.4.1"
   }
 }

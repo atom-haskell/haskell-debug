@@ -1,3 +1,5 @@
+-- manual testing
+
 primes :: [Integer]
 primes = filterPrime [2..]
   where filterPrime (p:xs) =
@@ -5,3 +7,10 @@ primes = filterPrime [2..]
 
 main :: IO ()
 main = print$ show $ take 10 primes
+
+-- automated tests
+
+test1 = print$ "hello"
+
+test2_helper = "hello"
+test2 = print$ test2_helper
