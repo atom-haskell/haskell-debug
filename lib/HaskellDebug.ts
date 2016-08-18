@@ -14,6 +14,7 @@ module HaskellDebug {
         filename: string;
         range: number[][];
         onError?: boolean;
+        historyLength?: number;
     }
 
     export interface HaskellDebugEmitter extends atomAPI.Emitter{
@@ -113,8 +114,21 @@ module HaskellDebug {
             return lines.slice(0, lines.length - 2);
         }
 
+        private async getHistoryLength(){
+            var historyQuery = await this.run(":history");
+            const regex = /-(\d*).*\n<end of history>$/;
+
+            var matchResult = historyQuery.match(regex);
+            if(matchResult === null){
+                return 0;
+            }
+            else{
+                return parseInt(matchResult[1]);
+            }
+        }
+
         static pausedOnError = Symbol("Paused on Error");
-        static finishedDebugging = Symbol("Finished debugging")
+        static finishedDebugging = Symbol("Finished debugging");
 
         private parsePrompt(stdOutput: string): BreakInfo | Symbol{
             var breakInfoOb: BreakInfo;
