@@ -4,6 +4,8 @@ import os = require("os");
 import atomAPI = require("atom");
 var Emitter = require("./Emitter");
 
+var atom = atom || {devMode: false};
+
 module HaskellDebug {
     function getPenultimateLine(str: string){
         var lines = str.split("\n");
@@ -25,6 +27,11 @@ module HaskellDebug {
         emit(eventName: "paused-on-exception", value: string): void;
         emit(eventName: "line-changed", value: BreakInfo): void;
         emit(eventName: "debug-finished", value: any): void;
+    }
+
+    interface Command{
+        text: string;
+        onFinish: (output: string) => any;
     }
 
     export class HaskellDebug{
@@ -92,7 +99,7 @@ module HaskellDebug {
         }
 
         public step(){
-            this.run(":step", true);
+            this.run(":step", true, true);
         }
 
         public stop() {
@@ -104,8 +111,9 @@ module HaskellDebug {
             this.run("continue", true);
         }
 
-        async startDebug(){
-            await this.run(":trace main", true);
+        async startDebug(moduleName?: string){
+            moduleName = moduleName || "main";
+            await this.run(":trace " + moduleName, true, true);
         }
 
         async getBindings(){
@@ -116,7 +124,7 @@ module HaskellDebug {
 
         private async getHistoryLength(){
             var historyQuery = await this.run(":history");
-            const regex = /-(\d*).*\n<end of history>$/;
+            const regex = /-(\d*).*(?:\n|\r|\r\n)<end of history>$/;
 
             var matchResult = historyQuery.match(regex);
             if(matchResult === null){
@@ -162,7 +170,7 @@ module HaskellDebug {
             throw new Error("Cannot read prompt: \n" + stdOutput);
         }
 
-        private async emitStatusChanges(prompt: string){
+        private async emitStatusChanges(prompt: string, emitHistoryLength: boolean){
             var result = this.parsePrompt(prompt);
 
             if(result == HaskellDebug.pausedOnError) {
@@ -172,26 +180,31 @@ module HaskellDebug {
                 this.emitter.emit("debug-finished", undefined);
             }
             else{
-                this.emitter.emit("line-changed", <BreakInfo>result);
+                var breakInfo = <BreakInfo>result;
+
+                if(emitHistoryLength)
+                    breakInfo.historyLength = await this.getHistoryLength();
+
+                this.emitter.emit("line-changed", breakInfo);
             }
         }
 
         private currentCommandBuffer = "";
-        private commandListeners = <((output: string) => any)[]>[];
+        private commands = <Command[]>[];
+        private currentCommandCallback: (output: string) => any = null;
         private commandFinishedString = "command_finish_o4uB1whagteqE8xBq9oq";
 
         private onReadable(){
             var currentString = (this.stdout.read() || "").toString();
 
-            if(atom.devMode)
-                console.log(currentString);
-
             this.currentCommandBuffer += currentString;
 
             var finishStringPosition = this.currentCommandBuffer.search(this.commandFinishedString);
             if(finishStringPosition !== -1){
-                var callback = this.commandListeners.shift();
-                callback(this.currentCommandBuffer.slice(0, finishStringPosition));
+                if(atom.devMode)
+                    console.log(this.currentCommandBuffer);
+
+                this.currentCommandCallback(this.currentCommandBuffer.slice(0, finishStringPosition));
 
                 // Take the finished string off the buffer and process the next ouput
                 this.currentCommandBuffer = this.currentCommandBuffer.slice(
@@ -200,35 +213,57 @@ module HaskellDebug {
             }
         }
 
-        private run(command: string, emitStatusChanges?: boolean): Promise<string>{
+        private run(commandText: string, emitStatusChanges?: boolean, emitHistoryLength?: boolean): Promise<string>{
+            var shiftAndRunCommand = () => {
+                var command = this.commands.shift();
+
+                this.currentCommandCallback = command.onFinish;
+
+                if(atom.devMode)
+                    console.log(command.text);
+
+                this.stdin.write(command.text + os.EOL);
+            }
+
             emitStatusChanges = emitStatusChanges || false;
+            emitHistoryLength = emitHistoryLength || false;
             return new Promise(fulfil => {
-                this.stdin.write(command + os.EOL);
-                this.commandListeners.push(output => {
-                    if(atom.devMode)
-                        console.log(command);
+                var command: Command = {
+                    text: commandText,
+                    onFinish: (output) => {
+                        this.currentCommandCallback = null;
 
-                    var lastEndOfLine = output.lastIndexOf(os.EOL);
+                        var lastEndOfLine = output.lastIndexOf(os.EOL);
 
-                    if(lastEndOfLine == -1){
-                        /*i.e. no output has been produced*/
-                        if(emitStatusChanges){
-                            this.emitStatusChanges(output.slice(0, output.length))
+                        if(lastEndOfLine == -1){
+                            /*i.e. no output has been produced*/
+                            if(emitStatusChanges){
+                                this.emitStatusChanges(output.slice(0, output.length), emitHistoryLength)
+                            }
+                            return;
                         }
-                        return;
-                    }
+                        else{
+                            var promptBeginPosition = lastEndOfLine + os.EOL.length;
 
-                    var promptBeginPosition = lastEndOfLine + os.EOL.length;
+                            if(emitStatusChanges){
+                                this.emitStatusChanges(output.slice(promptBeginPosition, output.length), emitHistoryLength).then(() => {
+                                    fulfil(output.slice(0, lastEndOfLine));
+                                })
+                            }
+                            else{
+                                fulfil(output.slice(0, lastEndOfLine));
+                            }
+                        }
+                        if(this.commands.length !== 0)
+                            shiftAndRunCommand();
+                    }
+                }
 
-                    if(emitStatusChanges){
-                        this.emitStatusChanges(output.slice(promptBeginPosition, output.length)).then(() => {
-                            fulfil(output.slice(0, lastEndOfLine));
-                        })
-                    }
-                    else{
-                        fulfil(output.slice(0, lastEndOfLine));
-                    }
-                })
+                this.commands.push(command);
+
+                if(this.currentCommandCallback === null){
+                    shiftAndRunCommand();
+                }
             })
         }
     }
