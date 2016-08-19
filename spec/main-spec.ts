@@ -28,7 +28,7 @@ describe("HaskellDebug", () => {
         session.startDebug("test1");
     })
 
-    fit("reports history", function (done){
+    it("reports history", function (done){
         session.addBreakpoint("test2_helper");
         session.emitter.on("line-changed", (info: HaskellDebug.BreakInfo) => {
             expect(info.historyLength).toBe(1);

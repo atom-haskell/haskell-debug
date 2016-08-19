@@ -2,7 +2,7 @@ import Draggable = require("draggable");
 import atomAPI = require("atom");
 
 interface DebugViewEmitter extends atomAPI.Emitter{
-    on(eventName: "forward" | "back" | "continue" | "stop", handler: () => any);
+    on(eventName: "forward" | "back" | "continue" | "stop" | "step", handler: () => any);
 }
 
 class DebugView {
