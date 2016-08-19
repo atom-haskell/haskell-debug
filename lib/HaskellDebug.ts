@@ -240,7 +240,6 @@ module HaskellDebug {
                             if(emitStatusChanges){
                                 this.emitStatusChanges(output.slice(0, output.length), emitHistoryLength)
                             }
-                            return;
                         }
                         else{
                             var promptBeginPosition = lastEndOfLine + os.EOL.length;
