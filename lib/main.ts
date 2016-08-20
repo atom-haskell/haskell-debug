@@ -5,6 +5,42 @@ import HaskellDebug = _HaskellDebug.HaskellDebug;
 import BreakInfo = _HaskellDebug.BreakInfo;
 
 module Main{
+    class History{
+        private _maxPosition = 0;
+        public setMaxPosition(newLength: number){
+            this._maxPosition = newLength;
+            this._currentPosition = 0;
+            this.updateButtonsState();
+        }
+        public getMaxPosition(){
+            return this._maxPosition;
+        }
+
+        private _currentPosition = 0;
+        /**
+          * sets the current history position, returns false if newPosition is invalid
+        */
+        public setCurrentPosition(newPosition: number){
+            if(newPosition < 0 || newPosition > this._maxPosition){
+                return false;
+            }
+            this._currentPosition = newPosition;
+            this.updateButtonsState();
+
+            return true;
+        }
+        public getCurrentPosition(){
+            return this._currentPosition;
+        }
+
+        private updateButtonsState(){
+            debugView.setButtonEnabled("forward", this._currentPosition != 0);
+            debugView.setButtonEnabled("back", this._currentPosition != this._maxPosition);
+        }
+    }
+
+    var historyState = new History();
+
     var settings = {
         breakOnError: true
     }
@@ -100,6 +136,9 @@ module Main{
             currentDebug = new HaskellDebug();
             currentDebug.emitter.on("line-changed", (info: BreakInfo) => {
                 hightlightLine(info);
+                if(info.historyLength !== undefined){
+                    historyState.setMaxPosition(info.historyLength);
+                }
             })
             currentDebug.emitter.on("paused-on-exception", (errorMes: string) => {
                 console.log("Error: " + errorMes)
@@ -121,12 +160,14 @@ module Main{
         },
         "debug-back": () => {
             if(currentDebug != null){
-                currentDebug.back();
+                if(historyState.setCurrentPosition(historyState.getCurrentPosition() + 1))
+                    currentDebug.back();
             }
         },
         "debug-forward": () => {
             if(currentDebug != null){
-                currentDebug.forward();
+                if(historyState.setCurrentPosition(historyState.getCurrentPosition() - 1))
+                    currentDebug.forward();
             }
         },
         "debug-step": () => {

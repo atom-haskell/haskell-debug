@@ -3,7 +3,6 @@ import path = require("path");
 
 describe("HaskellDebug", () => {
     var session: HaskellDebug.HaskellDebug;
-    var spy: jasmine.Spy;
 
     beforeEach(() => {
         session = new HaskellDebug.HaskellDebug();

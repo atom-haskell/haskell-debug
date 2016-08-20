@@ -3,7 +3,6 @@ const HaskellDebug = require("../lib/HaskellDebug");
 const path = require("path");
 describe("HaskellDebug", () => {
     var session;
-    var spy;
     beforeEach(() => {
         session = new HaskellDebug.HaskellDebug();
         session.loadModule(path.resolve(__dirname, "../spec/test.hs"));

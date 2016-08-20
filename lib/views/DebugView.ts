@@ -16,6 +16,14 @@ class DebugView {
       */
     public emitter: DebugViewEmitter = new atomAPI.Emitter();
 
+    private buttons: {
+        forward: HTMLElement;
+        back: HTMLElement;
+    } = {
+        forward: null,
+        back: null
+    };
+
     private addButton(description: string, icon: string, eventName: string){
         var button = document.createElement("button");
 
@@ -28,7 +36,16 @@ class DebugView {
 
         button.addEventListener("click", () => this.emitter.emit(eventName, null));
 
-        this.container.appendChild(button);
+        return <HTMLElement>this.container.appendChild(button);
+    }
+
+    public setButtonEnabled(button: "forward" | "back", enabled: boolean){
+        if(enabled){
+            (<HTMLElement>this.buttons[button]).classList.remove("disabled");
+        }
+        else{
+            (<HTMLElement>this.buttons[button]).classList.add("disabled");
+        }
     }
 
     constructor(){
@@ -42,8 +59,8 @@ class DebugView {
         this.element.appendChild(this.container);
 
         this.addButton("Step forward", "arrow-down", "step");
-        this.addButton("Back in history", "chevron-up", "back");
-        this.addButton("Forward in history", "chevron-down", "forward");
+        this.buttons.back = this.addButton("Back in history", "chevron-up", "back");
+        this.buttons.forward = this.addButton("Forward in history", "chevron-down", "forward");
         this.addButton("Continue", "playback-play", "continue");
         this.addButton("Stop", "primitive-square", "stop");
 
