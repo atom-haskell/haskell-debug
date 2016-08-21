@@ -1,8 +1,43 @@
 import Draggable = require("draggable");
 import atomAPI = require("atom");
+import SpacePen = require("space-pen");
 
 interface DebugViewEmitter extends atomAPI.Emitter{
     on(eventName: "forward" | "back" | "continue" | "stop" | "step", handler: () => any);
+}
+
+
+class Button{
+    element: HTMLElement;
+    emitter: atomAPI.Emitter;
+    private _isEnabled: boolean;
+    private tooltip: AtomCore.Disposable;
+
+    set isEnabled(enabled: boolean){
+        if(enabled){
+            this.element.classList.remove("disabled");
+        }
+        else{
+            this.element.classList.add("disabled");
+        }
+    }
+
+    dispose(){
+        this.tooltip.dispose();
+    }
+
+    constructor(description: string, icon: string){
+        this.element = document.createElement("button");
+
+        this.element.className = "btn btn-primary icon";
+        this.element.classList.add("icon-" + icon);
+
+        this.tooltip = atom.tooltips.add(this.element, {
+            title: description
+        })
+
+        this.element.addEventListener("click", () => this.emitter.emit("click", null));
+    }
 }
 
 class DebugView {
@@ -16,35 +51,26 @@ class DebugView {
       */
     public emitter: DebugViewEmitter = new atomAPI.Emitter();
 
-    private buttons: {
-        forward: HTMLElement;
-        back: HTMLElement;
-    } = {
-        forward: null,
-        back: null
-    };
-
-    private addButton(description: string, icon: string, eventName: string){
-        var button = document.createElement("button");
-
-        button.className = "btn btn-primary icon";
-        button.classList.add("icon-" + icon);
-
-        atom.tooltips.add(button, {
-            title: description
-        })
-
-        button.addEventListener("click", () => this.emitter.emit(eventName, null));
-
-        return <HTMLElement>this.container.appendChild(button);
+    buttons = {
+        step: <Button>null,
+        back: <Button>null,
+        forward: <Button>null,
+        continue: <Button>null,
+        stop: <Button>null
     }
 
-    public setButtonEnabled(button: "forward" | "back", enabled: boolean){
-        if(enabled){
-            (<HTMLElement>this.buttons[button]).classList.remove("disabled");
-        }
-        else{
-            (<HTMLElement>this.buttons[button]).classList.add("disabled");
+    private addButton(description: string, icon: string, eventName: string){
+        var button = new Button(description, icon);
+        button.emitter.on("click", () => this.emitter.emit(eventName, null));
+        this.container.appendChild(button.element)
+
+        return button;
+    }
+
+    dispose(){
+        for(var buttonName of Object.keys(this.buttons)){
+            var button = <Button>this.buttons[buttonName];
+            button.dispose();
         }
     }
 
@@ -58,11 +84,11 @@ class DebugView {
 
         this.element.appendChild(this.container);
 
-        this.addButton("Step forward", "arrow-down", "step");
+        this.buttons.step = this.addButton("Step forward", "arrow-down", "step");
         this.buttons.back = this.addButton("Back in history", "chevron-up", "back");
         this.buttons.forward = this.addButton("Forward in history", "chevron-down", "forward");
-        this.addButton("Continue", "playback-play", "continue");
-        this.addButton("Stop", "primitive-square", "stop");
+        this.buttons.continue = this.addButton("Continue", "playback-play", "continue");
+        this.buttons.stop = this.addButton("Stop", "primitive-square", "stop");
 
         this.draggable = new Draggable(this.element);
         this.draggable.set(atom.workspace.getActiveTextEditor()["width"] / 2 - 87/*size of the element*/, 30);

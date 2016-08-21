@@ -34,8 +34,8 @@ module Main{
         }
 
         private updateButtonsState(){
-            debugView.setButtonEnabled("forward", this._currentPosition != 0);
-            debugView.setButtonEnabled("back", this._currentPosition != this._maxPosition);
+            debugView.buttons.forward.isEnabled = this._currentPosition != 0;
+            debugView.buttons.back.isEnabled = this._currentPosition != this._maxPosition;
         }
     }
 
