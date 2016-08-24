@@ -1,4 +1,12 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator.throw(value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments)).next());
+    });
+};
 const HaskellDebug = require("../lib/HaskellDebug");
 const path = require("path");
 describe("HaskellDebug", () => {
@@ -29,5 +37,26 @@ describe("HaskellDebug", () => {
             done();
         });
         session.startDebug("test2");
+    });
+    describe("expressions", () => {
+        it("evaluates variables", function (done) {
+            (() => __awaiter(this, void 0, void 0, function* () {
+                session.run("test3_value");
+                expect((yield session.resolveExpression("test3_value"))).toBe("3");
+            }))().then(() => done()).catch(() => done.fail());
+        });
+        it("evaluates expressions", function (done) {
+            (() => __awaiter(this, void 0, void 0, function* () {
+                expect((yield session.resolveExpression("test3_value + 3"))).toBe("(_t1::Integer)");
+            }))().then(() => done()).catch(() => done.fail());
+        });
+        it("doesn't override temp(n) values", function (done) {
+            (() => __awaiter(this, void 0, void 0, function* () {
+                session.run("let temp1 = -4");
+                session.run("temp1");
+                session.resolveExpression("test3_value + 3");
+                expect((yield session.run("temp1"))).toBe("-4");
+            }))().then(() => done()).catch(() => done.fail());
+        });
     });
 });

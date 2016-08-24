@@ -35,4 +35,28 @@ describe("HaskellDebug", () => {
         })
         session.startDebug("test2");
     })
+
+    describe("expressions" , () => {
+        it("evaluates variables", function (done){
+            (async () => {
+                session.run("test3_value");
+                expect((await session.resolveExpression("test3_value"))).toBe("3");
+            })().then(() => done()).catch(() => done.fail());
+        })
+
+        it("evaluates expressions", function (done){
+            (async () => {
+                expect((await session.resolveExpression("test3_value + 3"))).toBe("(_t1::Integer)");
+            })().then(() => done()).catch(() => done.fail());
+        })
+
+        it("doesn't override temp(n) values", function (done){
+            (async () => {
+                session.run("let temp1 = -4");
+                session.run("temp1");
+                session.resolveExpression("test3_value + 3");
+                expect((await session.run("temp1"))).toBe("-4");
+            })().then(() => done()).catch(() => done.fail());
+        })
+    })
 })

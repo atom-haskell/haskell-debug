@@ -89,6 +89,31 @@ module HaskellDebug {
                 this.run(`:break ${breakpoint.file} ${breakpoint.line}`);
         }
 
+        /** resolved the given expression using :print, returns false if it is invalid
+        */
+        public async resolveExpression(expression: string){
+            var getExpression = (ghciOutput: string, variable: string): string | boolean => {
+                var matchResult = ghciOutput.match(/[^ ]* = (.*)/);
+                if(matchResult === null) return false;
+                return matchResult[1];
+            }
+
+            // try printing expression
+            var printingResult = getExpression(await this.run(`:print ${expression}`), expression);
+            if(printingResult !== false){
+                return printingResult;
+            }
+
+            // if that fails assign it to a temporary variable and evaluate that
+            var tempVarNum = 0;
+            var potentialTempVar: string | boolean;
+            do{
+                potentialTempVar = getExpression(await this.run(`:print temp${tempVarNum}`), `temp${tempVarNum}`)
+            } while(potentialTempVar !== false);
+
+            await this.run(`let temp${tempVarNum} = ${expression}`);
+            return getExpression(await this.run(`:print temp${tempVarNum}`), `temp${tempVarNum}`);
+        }
 
         public forward(){
             this.run(":forward", true);
@@ -213,7 +238,7 @@ module HaskellDebug {
             }
         }
 
-        private run(commandText: string, emitStatusChanges?: boolean, emitHistoryLength?: boolean): Promise<string>{
+        public run(commandText: string, emitStatusChanges?: boolean, emitHistoryLength?: boolean): Promise<string>{
             var shiftAndRunCommand = () => {
                 var command = this.commands.shift();
 
@@ -238,8 +263,11 @@ module HaskellDebug {
                         if(lastEndOfLine == -1){
                             /*i.e. no output has been produced*/
                             if(emitStatusChanges){
-                                this.emitStatusChanges(output.slice(0, output.length), emitHistoryLength)
+                                this.emitStatusChanges(output.slice(0, output.length), emitHistoryLength).then(() => {
+                                    fulfil("");
+                                })
                             }
+                            fulfil("");
                         }
                         else{
                             var promptBeginPosition = lastEndOfLine + os.EOL.length;
