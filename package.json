@@ -20,6 +20,13 @@
     "url": "https://github.com/ThomasHickman/haskell-debug/issues"
   },
   "homepage": "https://github.com/ThomasHickman/haskell-debug#readme",
+  "consumedServices": {
+   "ide-haskell-upi": {
+     "versions": {
+       "^0.0.1": "consumeHaskellUpi"
+     }
+   }
+  },
   "atomTestRunner": "jasmine",
   "dependencies": {
     "draggable": "^4.0.4",

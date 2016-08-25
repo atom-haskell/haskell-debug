@@ -69,6 +69,7 @@ module Main{
         }
     }
 
+
     var breakpoints: Map<number, Breakpoint> = new Map();
     function toggleBreakpoint(lineNumber: number){
         var te = atom.workspace.getActiveTextEditor();
@@ -205,6 +206,77 @@ module Main{
                               "haskell:" + command,
                               commands[command]);
         }
+    }
+
+    interface HaskellUPIContainer{
+        registerPlugin(plugin: atomAPI.CompositeDisposable): HaskellUPI;
+    }
+
+    type Tooltip = {
+        text: string;
+        highlighter: string
+    } | {
+        html: string;
+    } | string;
+
+    interface TooltipAndRange{
+        range: TextBuffer.IRange;
+        text: Tooltip;
+    }
+
+    type TooltipContainer = TooltipAndRange | Promise<TooltipAndRange>
+
+    interface ShowTooltipArgs{
+        pos: TextBuffer.IPoint;
+        editor: AtomCore.IEditor;
+        eventType: "mouse" | "selection" | "context";
+        tooltip: (range: TextBuffer.IRange) => TooltipContainer;
+    }
+
+    interface HaskellUPI{
+        onShouldShowTooltip(callback: (editor: AtomCore.IEditor, crange: TextBuffer.IRange,
+            type: "mouse" | "selection") => TooltipContainer);
+        showTooltip(arg: ShowTooltipArgs);
+    }
+
+    export function consumeHaskellUpi(_upi: HaskellUPIContainer){
+        var pluginDisposable = new atomAPI.CompositeDisposable();
+        var upi = _upi.registerPlugin(pluginDisposable);
+        console.log(upi);
+        var prevShowTooltip = upi.showTooltip;
+        upi["__proto__"].showTooltip = function (arg: ShowTooltipArgs) {
+            var prevTooltipFunc = arg.tooltip;
+            arg.tooltip = async (range) => {
+                var tooltipAndRange = await prevTooltipFunc(range);
+                var tooltip = tooltipAndRange.text;
+
+                if(currentDebug != null){
+                    var debugValue = await currentDebug.resolveExpression(arg.editor.getTextInRange(tooltipAndRange.range));
+
+                    if(typeof(tooltip) == "object" && tooltip["text"] !== undefined){
+                        tooltip["text"] = `--type ${tooltip["text"]}\n--current debug value ${debugValue}"`
+                    }
+                }
+
+                return tooltipAndRange;
+            }
+            prevShowTooltip.call(this, arg);
+        }
+
+        /*upi.onShouldShowTooltip(async (editor, range, type) => {
+            if(type == "mouse") return;
+            /*
+            var text = editor.getTextInRange(range);
+            var result = await currentDebug.resolveExpression(text)
+            return {
+                    range: range,
+                    text: {
+                        text: result,
+                        highlighter: "text/haskell"
+                    }
+                }
+                */
+        //})
     }
 }
 
