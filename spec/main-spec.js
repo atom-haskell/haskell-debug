@@ -7,12 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const HaskellDebug = require("../lib/HaskellDebug");
+const GHCIDebug = require("../lib/GHCIDebug");
 const path = require("path");
-describe("HaskellDebug", () => {
+describe("GHCIDebug", () => {
     var session;
     beforeEach(() => {
-        session = new HaskellDebug.HaskellDebug();
+        session = new GHCIDebug.GHCIDebug();
         session.loadModule(path.resolve(__dirname, "../spec/test.hs"));
     });
     it("breaks at breakpoints", function (done) {

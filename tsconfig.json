@@ -24,8 +24,7 @@
     "files": [
         "lib/BreakpointUI.ts",
         "lib/common.d.ts",
-        "lib/HaskellDebug.ts",
-        "lib/History.ts",
+        "lib/GHCIDebug.ts",
         "lib/LineHighlighter.ts",
         "lib/main.ts",
         "lib/views/DebugView.ts",

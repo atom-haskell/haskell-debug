@@ -6,7 +6,7 @@ var Emitter = require("./Emitter");
 
 var atom = atom || {devMode: false};
 
-module HaskellDebug {
+module GHCIDebug {
     function getPenultimateLine(str: string){
         var lines = str.split("\n");
         return lines[lines.length - 1];
@@ -19,7 +19,7 @@ module HaskellDebug {
         historyLength?: number;
     }
 
-    export interface HaskellDebugEmitter extends atomAPI.Emitter{
+    export interface GHCIDebugEmitter extends atomAPI.Emitter{
         on(eventName: "paused-on-exception", handler: (name: string) => any): AtomCore.Disposable;
         on(eventName: "line-changed", handler: (info: BreakInfo) => any): AtomCore.Disposable;
         on(eventName: "debug-finished", handler: () => any): AtomCore.Disposable;
@@ -34,7 +34,7 @@ module HaskellDebug {
         onFinish: (output: string) => any;
     }
 
-    export class HaskellDebug{
+    export class GHCIDebug{
         private ghci_cmd: cp.ChildProcess;
         stdout: stream.Readable;
         stdin: stream.Writable;
@@ -55,7 +55,7 @@ module HaskellDebug {
           * debug-finished: (void)
           *     Emmited when the debugger has reached the end of the program
           */
-        public emitter: HaskellDebugEmitter = new Emitter();
+        public emitter: GHCIDebugEmitter = new Emitter();
 
         constructor(){
             this.ghci_cmd = cp.spawn("ghci");
@@ -181,10 +181,10 @@ module HaskellDebug {
                 })
             },{
                 pattern: /\[<exception thrown>\].*> $/,
-                func: () => HaskellDebug.pausedOnError
+                func: () => GHCIDebug.pausedOnError
             },{
                 pattern: /.*> $/,
-                func: () => HaskellDebug.finishedDebugging
+                func: () => GHCIDebug.finishedDebugging
             }]
             for (var pattern of patterns){
                 var matchResult = stdOutput.match(pattern.pattern);
@@ -198,10 +198,10 @@ module HaskellDebug {
         private async emitStatusChanges(prompt: string, emitHistoryLength: boolean){
             var result = this.parsePrompt(prompt);
 
-            if(result == HaskellDebug.pausedOnError) {
+            if(result == GHCIDebug.pausedOnError) {
                 var exceptionString = await this.run("print _exception");
             }
-            else if(result == HaskellDebug.finishedDebugging){
+            else if(result == GHCIDebug.finishedDebugging){
                 this.emitter.emit("debug-finished", undefined);
             }
             else{
@@ -296,4 +296,4 @@ module HaskellDebug {
     }
 }
 
-export = HaskellDebug
+export = GHCIDebug

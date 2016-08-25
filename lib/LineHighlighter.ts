@@ -1,4 +1,4 @@
-import {BreakInfo} from "./HaskellDebug";
+import {BreakInfo} from "./GHCIDebug";
 
 class LineHighlighter{
     debugLineMarker: AtomCore.IDisplayBufferMarker = null;

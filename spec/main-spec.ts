@@ -1,18 +1,18 @@
-import HaskellDebug = require("../lib/HaskellDebug");
+import GHCIDebug = require("../lib/GHCIDebug");
 import path = require("path");
 
-describe("HaskellDebug", () => {
-    var session: HaskellDebug.HaskellDebug;
+describe("GHCIDebug", () => {
+    var session: GHCIDebug.GHCIDebug;
 
     beforeEach(() => {
-        session = new HaskellDebug.HaskellDebug();
+        session = new GHCIDebug.GHCIDebug();
         session.loadModule(path.resolve(__dirname, "../spec/test.hs"));
         // reload the module for a clean copy every time
     })
 
     it("breaks at breakpoints", function (done){
         session.addBreakpoint("test1");
-        session.emitter.on("line-changed", (info: HaskellDebug.BreakInfo) => {
+        session.emitter.on("line-changed", (info: GHCIDebug.BreakInfo) => {
             done();
         })
         session.startDebug("test1");
@@ -20,7 +20,7 @@ describe("HaskellDebug", () => {
 
     it("reports no history", function (done){
         session.addBreakpoint("test1");
-        session.emitter.on("line-changed", (info: HaskellDebug.BreakInfo) => {
+        session.emitter.on("line-changed", (info: GHCIDebug.BreakInfo) => {
             expect(info.historyLength).toBe(0);
             done();
         })
@@ -29,7 +29,7 @@ describe("HaskellDebug", () => {
 
     it("reports history", function (done){
         session.addBreakpoint("test2_helper");
-        session.emitter.on("line-changed", (info: HaskellDebug.BreakInfo) => {
+        session.emitter.on("line-changed", (info: GHCIDebug.BreakInfo) => {
             expect(info.historyLength).toBe(1);
             done();
         })

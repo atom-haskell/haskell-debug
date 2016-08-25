@@ -1,10 +1,10 @@
 import atomAPI = require("atom");
-import _HaskellDebug = require("./HaskellDebug");
+import _GHCIDebug = require("./GHCIDebug");
 import DebugView = require("./views/DebugView");
 import BreakpointUI = require("./BreakpointUI");
 import LineHighlighter = require("./LineHighlighter");
-import HaskellDebug = _HaskellDebug.HaskellDebug;
-import BreakInfo = _HaskellDebug.BreakInfo;
+import GHCIDebug = _GHCIDebug.GHCIDebug;
+import BreakInfo = _GHCIDebug.BreakInfo;
 
 module Main{
     class History{
@@ -67,13 +67,13 @@ module Main{
         debugPanel.destroy();
     }
 
-    export var currentDebug: HaskellDebug = null;
+    export var currentDebug: GHCIDebug = null;
     export var debugView: DebugView;
     export var debugPanel: AtomCore.Panel;
 
     export var commands = {
         "debug": () => {
-            currentDebug = new HaskellDebug();
+            currentDebug = new GHCIDebug();
             currentDebug.emitter.on("line-changed", (info: BreakInfo) => {
                 lineHighlighter.hightlightLine(info);
                 if(info.historyLength !== undefined){
