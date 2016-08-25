@@ -121,8 +121,10 @@ module Main{
     }
 
     function debuggerEnd(){
-        debugLineMarker.destroy();
-        debugLineMarker = null;
+        if(debugLineMarker !== null){
+            debugLineMarker.destroy();
+            debugLineMarker = null;
+        }
 
         debugPanel.destroy();
     }
