@@ -22,7 +22,8 @@
   "homepage": "https://github.com/ThomasHickman/haskell-debug#readme",
   "atomTestRunner": "jasmine",
   "dependencies": {
-    "draggable": "^4.0.4"
+    "draggable": "^4.0.4",
+    "lodash": "^4.15.0"
   },
   "devDependencies": {
     "jasmine": "^2.4.1"

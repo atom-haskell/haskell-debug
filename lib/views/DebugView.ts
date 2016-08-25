@@ -1,15 +1,15 @@
 import Draggable = require("draggable");
 import atomAPI = require("atom");
 import SpacePen = require("space-pen");
+import _ = require("lodash");
 
 interface DebugViewEmitter extends atomAPI.Emitter{
     on(eventName: "forward" | "back" | "continue" | "stop" | "step", handler: () => any);
 }
 
-
 class Button{
     element: HTMLElement;
-    emitter: atomAPI.Emitter;
+    emitter = new atomAPI.Emitter();
     private _isEnabled: boolean;
     private tooltip: AtomCore.Disposable;
 
@@ -65,6 +65,10 @@ class DebugView {
         this.container.appendChild(button.element)
 
         return button;
+    }
+
+    disabledAllButtons(){
+        _.values(this.buttons).forEach(button => button.isEnabled = false);
     }
 
     dispose(){
