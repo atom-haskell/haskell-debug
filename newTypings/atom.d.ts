@@ -48,5 +48,7 @@ declare module AtomCore{
 
     interface IViewRegistry {
 		getView(selector: any): HTMLElement;
+        addViewProvider(modelConstructor: Function, createView: () => HTMLElement): Disposable;
+        addViewProvider(createView: () => HTMLElement): Disposable; 
 	}
 }

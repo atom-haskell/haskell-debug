@@ -22,7 +22,7 @@ class Button{
         }
     }
 
-    dispose(){
+    destroy(){
         this.tooltip.dispose();
     }
 
@@ -40,7 +40,7 @@ class Button{
     }
 }
 
-class DebugView {
+class DebugView  {
     element: HTMLElement;
     private container: HTMLElement;
     private draggable: Draggable;
@@ -71,10 +71,10 @@ class DebugView {
         _.values(this.buttons).forEach(button => button.isEnabled = false);
     }
 
-    dispose(){
+    destroy(){
         for(var buttonName of Object.keys(this.buttons)){
             var button = <Button>this.buttons[buttonName];
-            button.dispose();
+            button.destroy();
         }
     }
 

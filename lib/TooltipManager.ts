@@ -48,7 +48,7 @@ class TooltipManager {
                 var debugValue = await _this.resolveExpression(arg.editor.getTextInRange(tooltipAndRange.range));
 
                 if(debugValue !== null && typeof(tooltip) == "object" && tooltip["text"] !== undefined){
-                    tooltip["text"] = `--type ${tooltip["text"]}\n--current debug value ${debugValue}"`
+                    tooltip["text"] = `--type\n${tooltip["text"]}\n--current debug value\n${debugValue}`
                 }
 
                 return tooltipAndRange;

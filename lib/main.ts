@@ -73,6 +73,7 @@ module Main{
     function debuggerEnd(){
         lineHighlighter.destroy();
         debugPanel.destroy();
+        debugView.destroy();
     }
 
     export var commands = {
