@@ -3,6 +3,7 @@ import _GHCIDebug = require("./GHCIDebug");
 import DebugView = require("./views/DebugView");
 import BreakpointUI = require("./BreakpointUI");
 import LineHighlighter = require("./LineHighlighter");
+import TooltipManager = require("./TooltipManager");
 import GHCIDebug = _GHCIDebug.GHCIDebug;
 import BreakInfo = _GHCIDebug.BreakInfo;
 
@@ -44,6 +45,13 @@ module Main{
     export var historyState = new History();
     export var breakpointUI: BreakpointUI;
     export var lineHighlighter = new LineHighlighter();
+    export var ghciDebug: GHCIDebug = null;
+    export var debugView: DebugView;
+    export var debugPanel: AtomCore.Panel;
+    export var tooltipManager = new TooltipManager(async (expression) => {
+        if(ghciDebug === null) return null
+        return ghciDebug.resolveExpression(expression);
+    });
     export var settings = {
         breakOnError: true
     }
@@ -67,62 +75,58 @@ module Main{
         debugPanel.destroy();
     }
 
-    export var currentDebug: GHCIDebug = null;
-    export var debugView: DebugView;
-    export var debugPanel: AtomCore.Panel;
-
     export var commands = {
         "debug": () => {
-            currentDebug = new GHCIDebug();
-            currentDebug.emitter.on("line-changed", (info: BreakInfo) => {
+            ghciDebug = new GHCIDebug();
+            ghciDebug.emitter.on("line-changed", (info: BreakInfo) => {
                 lineHighlighter.hightlightLine(info);
                 if(info.historyLength !== undefined){
                     historyState.setMaxPosition(info.historyLength);
                 }
             })
-            currentDebug.emitter.on("paused-on-exception", (errorMes: string) => {
+            ghciDebug.emitter.on("paused-on-exception", (errorMes: string) => {
                 console.log("Error: " + errorMes)
             })
-            currentDebug.emitter.on("debug-finished", () => debuggerEnd())
+            ghciDebug.emitter.on("debug-finished", () => debuggerEnd())
             var fileToDebug = atom.workspace.getActiveTextEditor().getPath()
-            currentDebug.loadModule(fileToDebug);
+            ghciDebug.loadModule(fileToDebug);
             breakpointUI.breakpoints.forEach(ob => {
                 if(ob.file == fileToDebug)
-                    currentDebug.addBreakpoint(ob.line.toString());
+                    ghciDebug.addBreakpoint(ob.line.toString());
                 else
-                    currentDebug.addBreakpoint(ob) //TODO: make this work properly
+                    ghciDebug.addBreakpoint(ob) //TODO: make this work properly
             });
             if(settings.breakOnError){
-                currentDebug.pauseOnException();
+                ghciDebug.pauseOnException();
             }
-            currentDebug.startDebug();
+            ghciDebug.startDebug();
             displayDebuggingToolbar();
         },
         "debug-back": () => {
-            if(currentDebug != null){
+            if(ghciDebug != null){
                 if(historyState.setCurrentPosition(historyState.getCurrentPosition() + 1))
-                    currentDebug.back();
+                    ghciDebug.back();
             }
         },
         "debug-forward": () => {
-            if(currentDebug != null){
+            if(ghciDebug != null){
                 if(historyState.setCurrentPosition(historyState.getCurrentPosition() - 1))
-                    currentDebug.forward();
+                    ghciDebug.forward();
             }
         },
         "debug-step": () => {
-            if(currentDebug != null){
-                currentDebug.step();
+            if(ghciDebug != null){
+                ghciDebug.step();
             }
         },
         "debug-stop": () => {
-            if(currentDebug != null){
-                currentDebug.stop(); // this will trigger debug-finished event
+            if(ghciDebug != null){
+                ghciDebug.stop(); // this will trigger debug-finished event
             }
         },
         "debug-continue": () => {
-            if(currentDebug != null){
-                currentDebug.continue();
+            if(ghciDebug != null){
+                ghciDebug.continue();
             }
         },
         "toggle-breakpoint": () => {
@@ -145,75 +149,8 @@ module Main{
         }
     }
 
-    interface HaskellUPIContainer{
-        registerPlugin(plugin: atomAPI.CompositeDisposable): HaskellUPI;
-    }
-
-    type Tooltip = {
-        text: string;
-        highlighter: string
-    } | {
-        html: string;
-    } | string;
-
-    interface TooltipAndRange{
-        range: TextBuffer.IRange;
-        text: Tooltip;
-    }
-
-    type TooltipContainer = TooltipAndRange | Promise<TooltipAndRange>
-
-    interface ShowTooltipArgs{
-        pos: TextBuffer.IPoint;
-        editor: AtomCore.IEditor;
-        eventType: "mouse" | "selection" | "context";
-        tooltip: (range: TextBuffer.IRange) => TooltipContainer;
-    }
-
-    interface HaskellUPI{
-        onShouldShowTooltip(callback: (editor: AtomCore.IEditor, crange: TextBuffer.IRange,
-            type: "mouse" | "selection") => TooltipContainer);
-        showTooltip(arg: ShowTooltipArgs);
-    }
-
-    export function consumeHaskellUpi(_upi: HaskellUPIContainer){
-        var pluginDisposable = new atomAPI.CompositeDisposable();
-        var upi = _upi.registerPlugin(pluginDisposable);
-        console.log(upi);
-        var prevShowTooltip = upi.showTooltip;
-        upi["__proto__"].showTooltip = function (arg: ShowTooltipArgs) {
-            var prevTooltipFunc = arg.tooltip;
-            arg.tooltip = async (range) => {
-                var tooltipAndRange = await prevTooltipFunc(range);
-                var tooltip = tooltipAndRange.text;
-
-                if(currentDebug != null){
-                    var debugValue = await currentDebug.resolveExpression(arg.editor.getTextInRange(tooltipAndRange.range));
-
-                    if(typeof(tooltip) == "object" && tooltip["text"] !== undefined){
-                        tooltip["text"] = `--type ${tooltip["text"]}\n--current debug value ${debugValue}"`
-                    }
-                }
-
-                return tooltipAndRange;
-            }
-            prevShowTooltip.call(this, arg);
-        }
-
-        /*upi.onShouldShowTooltip(async (editor, range, type) => {
-            if(type == "mouse") return;
-            /*
-            var text = editor.getTextInRange(range);
-            var result = await currentDebug.resolveExpression(text)
-            return {
-                    range: range,
-                    text: {
-                        text: result,
-                        highlighter: "text/haskell"
-                    }
-                }
-                */
-        //})
+    export function consumeHaskellUpi(upi){
+        tooltipManager.consumeHaskellUpi(upi);
     }
 }
 

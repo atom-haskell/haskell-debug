@@ -89,18 +89,18 @@ module GHCIDebug {
                 this.run(`:break ${breakpoint.file} ${breakpoint.line}`);
         }
 
-        /** resolved the given expression using :print, returns false if it is invalid
+        /** resolved the given expression using :print, returns null if it is invalid
         */
         public async resolveExpression(expression: string){
-            var getExpression = (ghciOutput: string, variable: string): string | boolean => {
+            var getExpression = (ghciOutput: string, variable: string): string => {
                 var matchResult = ghciOutput.match(/[^ ]* = (.*)/);
-                if(matchResult === null) return false;
+                if(matchResult === null) return null;
                 return matchResult[1];
             }
 
             // try printing expression
             var printingResult = getExpression(await this.run(`:print ${expression}`), expression);
-            if(printingResult !== false){
+            if(printingResult !== null){
                 return printingResult;
             }
 
@@ -109,7 +109,7 @@ module GHCIDebug {
             var potentialTempVar: string | boolean;
             do{
                 potentialTempVar = getExpression(await this.run(`:print temp${tempVarNum}`), `temp${tempVarNum}`)
-            } while(potentialTempVar !== false);
+            } while(potentialTempVar !== null);
 
             await this.run(`let temp${tempVarNum} = ${expression}`);
             return getExpression(await this.run(`:print temp${tempVarNum}`), `temp${tempVarNum}`);

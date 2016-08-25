@@ -27,6 +27,7 @@
         "lib/GHCIDebug.ts",
         "lib/LineHighlighter.ts",
         "lib/main.ts",
+        "lib/TooltipManager.ts",
         "lib/views/DebugView.ts",
         "newTypings/atom.d.ts",
         "newTypings/atomExt.d.ts",
