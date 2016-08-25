@@ -1,6 +1,8 @@
 import atomAPI = require("atom");
 import _HaskellDebug = require("./HaskellDebug");
 import DebugView = require("./views/DebugView");
+import BreakpointUI = require("./BreakpointUI");
+import LineHighlighter = require("./LineHighlighter");
 import HaskellDebug = _HaskellDebug.HaskellDebug;
 import BreakInfo = _HaskellDebug.BreakInfo;
 
@@ -39,74 +41,13 @@ module Main{
         }
     }
 
-    var historyState = new History();
-
-    var settings = {
+    export var historyState = new History();
+    export var breakpointUI: BreakpointUI;
+    export var lineHighlighter = new LineHighlighter();
+    export var settings = {
         breakOnError: true
     }
 
-    var debugLineMarker: AtomCore.IDisplayBufferMarker = null;
-    async function hightlightLine(info: BreakInfo){
-        var editor = await atom.workspace.open(info.filename, {searchAllPanes: true});
-
-        if(debugLineMarker == null){
-            debugLineMarker = editor.markBufferRange(info.range, {invalidate: 'never'})
-            editor.decorateMarker(debugLineMarker, {
-                type: "highlight",
-                class: "highlight-green"
-            })
-            editor.decorateMarker(debugLineMarker, {
-                type: "line-number",
-                class: "highlight-green"
-            })
-            editor.decorateMarker(debugLineMarker, {
-                type: "gutter",
-                class: "highlight-green"
-            })
-        }
-        else{
-            debugLineMarker.setBufferRange(info.range, {});
-        }
-    }
-
-
-    var breakpoints: Map<number, Breakpoint> = new Map();
-    function toggleBreakpoint(lineNumber: number){
-        var te = atom.workspace.getActiveTextEditor();
-
-        if(breakpoints.has(lineNumber)){
-            te.destroyMarker(breakpoints.get(lineNumber).marker.id);
-            breakpoints.delete(lineNumber);
-        }
-        else{
-            let breakpointMarker = te.markBufferRange(new atomAPI.Range([lineNumber, 0], [lineNumber + 1, 0]));
-            te.decorateMarker(breakpointMarker, {
-                type: "line-number",
-                class: "breakpoint"
-            })
-
-            breakpoints.set(lineNumber, {
-                line: lineNumber + 1,
-                file: te.getPath(),
-                marker: breakpointMarker
-            })
-        }
-    }
-
-    function setUpBreakpointsUI(){
-        setTimeout(() => {
-            var te = atom.workspace.getActiveTextEditor();
-            var lineNumbersModal = te.gutterWithName("line-number");
-            var view = <HTMLElement>atom.views.getView(lineNumbersModal);
-            view.addEventListener("click", ev => {
-                var scopes = te.getRootScopeDescriptor().scopes;
-                if(scopes.length == 1 && scopes[0] == "source.haskell"){
-                    var lineNumber: number = parseInt(ev["path"][0].dataset.bufferRow);
-                    toggleBreakpoint(lineNumber);
-                }
-            })
-        }, 0)
-    }
 
     export function displayDebuggingToolbar(){
         debugView = new DebugView();
@@ -122,11 +63,7 @@ module Main{
     }
 
     function debuggerEnd(){
-        if(debugLineMarker !== null){
-            debugLineMarker.destroy();
-            debugLineMarker = null;
-        }
-
+        lineHighlighter.destroy();
         debugPanel.destroy();
     }
 
@@ -138,7 +75,7 @@ module Main{
         "debug": () => {
             currentDebug = new HaskellDebug();
             currentDebug.emitter.on("line-changed", (info: BreakInfo) => {
-                hightlightLine(info);
+                lineHighlighter.hightlightLine(info);
                 if(info.historyLength !== undefined){
                     historyState.setMaxPosition(info.historyLength);
                 }
@@ -149,7 +86,7 @@ module Main{
             currentDebug.emitter.on("debug-finished", () => debuggerEnd())
             var fileToDebug = atom.workspace.getActiveTextEditor().getPath()
             currentDebug.loadModule(fileToDebug);
-            breakpoints.forEach(ob => {
+            breakpointUI.breakpoints.forEach(ob => {
                 if(ob.file == fileToDebug)
                     currentDebug.addBreakpoint(ob.line.toString());
                 else
@@ -189,7 +126,7 @@ module Main{
             }
         },
         "toggle-breakpoint": () => {
-            toggleBreakpoint(atom.workspace.getActiveTextEditor().getCursorBufferPosition().row);
+            breakpointUI.toggleBreakpoint(atom.workspace.getActiveTextEditor().getCursorBufferPosition().row);
         }
     }
 
@@ -198,7 +135,7 @@ module Main{
             var scopes = te.getRootScopeDescriptor().scopes;
             if(scopes.length == 1 &&
                 scopes[0] == "source.haskell"){
-                    setUpBreakpointsUI();
+                    breakpointUI = new BreakpointUI();
             }
         })
         for(var command of Object.keys(commands)){

@@ -22,8 +22,11 @@
     "compileOnSave": true,
     "buildOnSave": false,
     "files": [
+        "lib/BreakpointUI.ts",
         "lib/common.d.ts",
         "lib/HaskellDebug.ts",
+        "lib/History.ts",
+        "lib/LineHighlighter.ts",
         "lib/main.ts",
         "lib/views/DebugView.ts",
         "newTypings/atom.d.ts",
