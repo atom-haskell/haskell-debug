@@ -1,6 +1,5 @@
 import Draggable = require("draggable");
 import atomAPI = require("atom");
-import SpacePen = require("space-pen");
 import _ = require("lodash");
 
 interface DebugViewEmitter extends atomAPI.Emitter{

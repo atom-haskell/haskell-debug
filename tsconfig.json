@@ -29,9 +29,11 @@
         "lib/main.ts",
         "lib/TooltipManager.ts",
         "lib/views/DebugView.ts",
+        "lib/views/ReactPolyfill.ts",
         "newTypings/atom.d.ts",
         "newTypings/atomExt.d.ts",
         "newTypings/draggable.d.ts",
+        "newTypings/reactPolyfill.d.ts",
         "spec/main-spec.ts",
         "typings/atom/atom.d.ts",
         "typings/emissary/emissary.d.ts",
@@ -42,9 +44,11 @@
         "typings/node/node.d.ts",
         "typings/pathwatcher/pathwatcher.d.ts",
         "typings/q/Q.d.ts",
+        "typings/react/react.d.ts",
         "typings/space-pen/space-pen.d.ts",
         "typings/status-bar/status-bar.d.ts",
-        "typings/text-buffer/text-buffer.d.ts"
+        "typings/text-buffer/text-buffer.d.ts",
+        "lib/views/CurrentVariablesView.tsx"
     ],
     "atom": {
         "rewriteTsconfig": true
