@@ -17,6 +17,7 @@ module GHCIDebug {
         range: number[][];
         onError?: boolean;
         historyLength?: number;
+        localBindings: string[]
     }
 
     export interface GHCIDebugEmitter extends atomAPI.Emitter{
@@ -195,7 +196,7 @@ module GHCIDebug {
             throw new Error("Cannot read prompt: \n" + stdOutput);
         }
 
-        private async emitStatusChanges(prompt: string, emitHistoryLength: boolean){
+        private async emitStatusChanges(prompt: string, mainBody: string, emitHistoryLength: boolean){
             var result = this.parsePrompt(prompt);
 
             if(result == GHCIDebug.pausedOnError) {
@@ -206,6 +207,8 @@ module GHCIDebug {
             }
             else{
                 var breakInfo = <BreakInfo>result;
+
+                breakInfo.localBindings = mainBody.split("\n").slice(1);
 
                 if(emitHistoryLength)
                     breakInfo.historyLength = await this.getHistoryLength();
@@ -263,7 +266,7 @@ module GHCIDebug {
                         if(lastEndOfLine == -1){
                             /*i.e. no output has been produced*/
                             if(emitStatusChanges){
-                                this.emitStatusChanges(output.slice(0, output.length), emitHistoryLength).then(() => {
+                                this.emitStatusChanges(output, "", emitHistoryLength).then(() => {
                                     fulfil("");
                                 })
                             }
@@ -273,7 +276,9 @@ module GHCIDebug {
                             var promptBeginPosition = lastEndOfLine + os.EOL.length;
 
                             if(emitStatusChanges){
-                                this.emitStatusChanges(output.slice(promptBeginPosition, output.length), emitHistoryLength).then(() => {
+                                this.emitStatusChanges(output.slice(promptBeginPosition, output.length),
+                                    output.slice(0, lastEndOfLine),
+                                    emitHistoryLength).then(() => {
                                     fulfil(output.slice(0, lastEndOfLine));
                                 })
                             }

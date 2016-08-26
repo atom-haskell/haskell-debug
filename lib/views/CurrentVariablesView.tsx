@@ -33,3 +33,5 @@ class CurrentVariablesView {
         this.draggable.set(atom.workspace.getActiveTextEditor()["width"] / 2 - 87/*size of the element*/, 30);
     }
 }
+
+export = CurrentVariablesView;

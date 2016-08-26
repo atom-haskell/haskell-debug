@@ -36,6 +36,15 @@ describe("GHCIDebug", () => {
         session.startDebug("test2");
     })
 
+    it("reports bindings", function (done){
+        session.addBreakpoint("test2_helper");
+        session.emitter.on("line-changed", (info: GHCIDebug.BreakInfo) => {
+            expect(info.localBindings).toEqual(["_result :: [Char] = _"]);
+            done();
+        })
+        session.startDebug("test2");
+    })
+
     describe("expressions" , () => {
         it("evaluates variables", function (done){
             (async () => {

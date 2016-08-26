@@ -1,6 +1,7 @@
 import atomAPI = require("atom");
 import _GHCIDebug = require("./GHCIDebug");
 import DebugView = require("./views/DebugView");
+import CurrentVariablesView = require("./views/CurrentVariablesView");
 import BreakpointUI = require("./BreakpointUI");
 import LineHighlighter = require("./LineHighlighter");
 import TooltipManager = require("./TooltipManager");
@@ -48,6 +49,8 @@ module Main{
     export var ghciDebug: GHCIDebug = null;
     export var debugView: DebugView;
     export var debugPanel: AtomCore.Panel;
+    export var currentVariablesView: CurrentVariablesView;
+    export var currentVariablesPanel: AtomCore.Panel;
     export var tooltipManager = new TooltipManager(async (expression) => {
         if(ghciDebug === null) return null
         return ghciDebug.resolveExpression(expression);
