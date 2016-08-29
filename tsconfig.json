@@ -28,6 +28,7 @@
         "lib/LineHighlighter.ts",
         "lib/main.ts",
         "lib/TooltipManager.ts",
+        "lib/views/Button.ts",
         "lib/views/DebugView.ts",
         "lib/views/ReactPolyfill.ts",
         "newTypings/atom.d.ts",
