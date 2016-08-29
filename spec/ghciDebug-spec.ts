@@ -1,7 +1,15 @@
 import GHCIDebug = require("../lib/GHCIDebug");
 import path = require("path");
 
-describe("GHCIDebug", () => {
+var topDescribeFunc = describe;
+
+// run this with jasmine v2.4
+if(!jasmine["version"]){/*defined in 2.x*/
+    console.warn("WARN: ghciDebug-spec cannot be run in jasmine v < 2");
+    topDescribeFunc = xdescribe;
+}
+
+topDescribeFunc("GHCIDebug", () => {
     var session: GHCIDebug.GHCIDebug;
 
     beforeEach(() => {

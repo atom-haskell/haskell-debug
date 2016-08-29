@@ -9,7 +9,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const GHCIDebug = require("../lib/GHCIDebug");
 const path = require("path");
-describe("GHCIDebug", () => {
+var topDescribeFunc = describe;
+if (!jasmine["version"]) {
+    console.warn("WARN: ghciDebug-spec cannot be run in jasmine v < 2");
+    topDescribeFunc = xdescribe;
+}
+topDescribeFunc("GHCIDebug", () => {
     var session;
     beforeEach(() => {
         session = new GHCIDebug.GHCIDebug();
