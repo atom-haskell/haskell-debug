@@ -27,7 +27,6 @@
       }
     }
   },
-  "atomTestRunner": "jasmine",
   "dependencies": {
     "draggable": "^4.0.4",
     "lodash": "^4.15.0"

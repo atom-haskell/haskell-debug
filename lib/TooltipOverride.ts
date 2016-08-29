@@ -32,7 +32,7 @@ interface HaskellUPI{
     showTooltip(arg: ShowTooltipArgs);
 }
 
-class TooltipManager {
+class TooltipOverride {
     consumeHaskellUpi(_upi: HaskellUPIContainer){
         var pluginDisposable = new atomAPI.CompositeDisposable();
         var upi = _upi.registerPlugin(pluginDisposable);
@@ -61,4 +61,4 @@ class TooltipManager {
     }
 }
 
-export = TooltipManager
+export = TooltipOverride

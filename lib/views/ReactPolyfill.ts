@@ -1,5 +1,5 @@
 module React{
-    function createElement(tagName: string, attributes: Object, ...extraElements: (HTMLElement | {toString: () => string})[]){
+    export function createElement(tagName: string, attributes: Object, ...extraElements: (HTMLElement | {toString: () => string})[]){
         var element = document.createElement(tagName);
 
         if(attributes !== null){
