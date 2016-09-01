@@ -7,7 +7,6 @@ class CurrentVariablesView {
     element: HTMLElement;
     private draggable: Draggable;
     private list: HTMLElement;
-    private highlighter = new Highlights({registry: atom.grammars});
 
     async updateList(localBindings: string[]){
         // remove all list elements
@@ -17,10 +16,7 @@ class CurrentVariablesView {
         for(var binding of localBindings){
             this.list.appendChild(
                 <li>
-                    {await this.highlighter.highlight({
-                        fileContents: binding,
-                        scopeName: "source.haskell"
-                    })}
+                    {binding}
                 </li>
             )
         }
