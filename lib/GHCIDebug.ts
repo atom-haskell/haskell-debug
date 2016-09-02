@@ -134,7 +134,7 @@ module GHCIDebug {
         }
 
         public continue() {
-            this.run("continue", true);
+            this.run(":continue", true);
         }
 
         async startDebug(moduleName?: string){
