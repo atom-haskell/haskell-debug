@@ -17,7 +17,7 @@ class Debugger{
     private currentVariablesView = new CurrentVariablesView();
     private currentVariablesPanel: AtomCore.Panel;
 
-    private destory(){
+    private destroy(){
         this.lineHighlighter.destroy();
         if(this.ghciDebug)
             this.ghciDebug.stop();
@@ -25,6 +25,16 @@ class Debugger{
         this.debugPanel.destroy();
         this.currentVariablesPanel.destroy();
         this.currentVariablesView.destroy();
+    }
+
+    hidePanels(){
+        this.debugPanel.hide();
+        this.currentVariablesPanel.hide();
+    }
+
+    showPanels(){
+        this.debugPanel.show();
+        this.currentVariablesPanel.show();
     }
 
     private displayGUI(){
@@ -60,7 +70,7 @@ class Debugger{
 
         this.ghciDebug.emitter.on("debug-finished", () => {
             this.ghciDebug = null;
-            this.destory()
+            this.destroy()
         })
 
         var fileToDebug = atom.workspace.getActiveTextEditor().getPath()

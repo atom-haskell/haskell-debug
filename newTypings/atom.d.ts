@@ -23,6 +23,7 @@ declare module AtomCore{
 
     interface IWorkspace{
         observeTextEditors(callback: (editor: IEditor) => any): Disposable;
+        observeActivePaneItem(func: (paneItem: any) => any);
     }
 
     interface TooltipOptions{

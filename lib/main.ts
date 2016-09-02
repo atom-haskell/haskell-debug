@@ -50,13 +50,28 @@ module Main{
     }
 
     export function activate(){
-        console.log("YAY!!");
         atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {
             var scopes = te.getRootScopeDescriptor().scopes;
             if(scopes.length == 1 &&
                 scopes[0] == "source.haskell"){
                     breakpointUI = new BreakpointUI();
             }
+        })
+
+        atom.workspace.observeActivePaneItem((pane) => {
+            if(debugger_ == null){
+                return;
+            }
+            if(pane instanceof atomAPI.TextEditor){
+                var te: AtomCore.IEditor = pane;
+                var scopes = te.getRootScopeDescriptor().scopes;
+                if(scopes.length == 1 &&
+                    scopes[0] == "source.haskell"){
+                        debugger_.showPanels();
+                        return;
+                }
+            }
+            debugger_.hidePanels();
         })
 
         for(var command of Object.keys(commands)){

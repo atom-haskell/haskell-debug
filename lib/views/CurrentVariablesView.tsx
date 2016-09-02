@@ -38,7 +38,7 @@ class CurrentVariablesView {
         </atom-panel>;
 
         this.draggable = new Draggable(this.element);
-        this.draggable.set(atom.workspace.getActiveTextEditor()["width"] / 2 + 500, 100);
+        this.draggable.set(atom.workspace.getActiveTextEditor()["width"] / 2 + 100, 100);
     }
 }
 

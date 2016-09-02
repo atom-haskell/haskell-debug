@@ -12,4 +12,7 @@ declare module "atom"{
         remove(disposable: AtomCore.Disposable[]): void;
         clear(): void;
     }
+    var TextEditor: {
+        new(): AtomCore.IEditor;
+    }
 }
