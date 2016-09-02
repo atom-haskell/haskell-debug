@@ -34,6 +34,10 @@ class DebugView  {
         return button;
     }
 
+    private cancelButtonsClick(){
+        _.values(this.buttons).forEach((button) => button.startClick = false);
+    }
+
     disabledAllButtons(){
         _.values(this.buttons).forEach(button => button.isEnabled = false);
     }
@@ -61,7 +65,10 @@ class DebugView  {
         this.buttons.continue = this.addButton("Continue", "playback-play", "continue");
         this.buttons.stop = this.addButton("Stop", "primitive-square", "stop");
 
-        this.draggable = new Draggable(this.element);
+        this.draggable = new Draggable(this.element, {
+            onDragStart: () => this.cancelButtonsClick()
+        });
+        
         this.draggable.set(atom.workspace.getActiveTextEditor()["width"] / 2 - 87/*size of the element*/, 30);
     }
 }

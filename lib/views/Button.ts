@@ -4,6 +4,7 @@ import atomAPI = require("atom");
 class Button{
     element: HTMLElement;
     emitter = new atomAPI.Emitter();
+    startClick = false;
     private _isEnabled: boolean;
     private tooltip: AtomCore.Disposable;
 
@@ -30,7 +31,13 @@ class Button{
             title: description
         })
 
-        this.element.addEventListener("click", () => this.emitter.emit("click", null));
+        this.element.addEventListener("mousedown", () => {
+            this.startClick = true;
+        })
+        this.element.addEventListener("click", () => {
+            if(this.startClick)
+                this.emitter.emit("click", null)
+        });
     }
 }
 
