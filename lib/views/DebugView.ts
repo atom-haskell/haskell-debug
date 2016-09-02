@@ -38,8 +38,12 @@ class DebugView  {
         _.values(this.buttons).forEach((button) => button.startClick = false);
     }
 
-    disabledAllButtons(){
+    disableAllButtons(){
         _.values(this.buttons).forEach(button => button.isEnabled = false);
+    }
+
+    enableAllButtons(){
+        _.values(this.buttons).forEach(button => button.isEnabled = true);
     }
 
     destroy(){
@@ -68,7 +72,7 @@ class DebugView  {
         this.draggable = new Draggable(this.element, {
             onDragStart: () => this.cancelButtonsClick()
         });
-        
+
         this.draggable.set(atom.workspace.getActiveTextEditor()["width"] / 2 - 87/*size of the element*/, 30);
     }
 }
