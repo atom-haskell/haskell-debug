@@ -24,14 +24,19 @@ module GHCIDebug {
         on(eventName: "paused-on-exception", handler: (name: string) => any): AtomCore.Disposable;
         on(eventName: "line-changed", handler: (info: BreakInfo) => any): AtomCore.Disposable;
         on(eventName: "debug-finished", handler: () => any): AtomCore.Disposable;
+        on(eventName: "console-output", handler: (output: string) => any): AtomCore.Disposable;
+        on(eventName: "command-issued", handler: (command: string) => any): AtomCore.Disposable;
 
         emit(eventName: "paused-on-exception", value: string): void;
         emit(eventName: "line-changed", value: BreakInfo): void;
         emit(eventName: "debug-finished", value: any): void;
+        emit(eventName: "console-output", value: string): void;
+        emit(eventName: "command-issued", value: string): void;
     }
 
     interface Command{
         text: string;
+        shouldEmit: boolean;
         onFinish: (output: string) => any;
     }
 
@@ -55,6 +60,12 @@ module GHCIDebug {
           *
           * debug-finished: (void)
           *     Emmited when the debugger has reached the end of the program
+          *
+          * console-output: (output: string)
+          *     Emmited when the ghci has outputed something to stdout, excluding the extra prompt
+          *
+          * command-issued: (command: string)
+          *     Emmited when a command has been executed
           */
         public emitter: GHCIDebugEmitter = new Emitter();
 
@@ -69,7 +80,8 @@ module GHCIDebug {
                     var stderrOutput = this.stderr.read();
                     if(stderrOutput === null)
                         return; // this is the end of the input stream
-                    console.log(`stderr: %c ${stderrOutput.toString()}`, "color: red")
+
+                    this.emitter.emit("console-output", stderrOutput.toString());
                 }
             })
             this.run(`:set prompt "%s> ${this.commandFinishedString}"`);
@@ -229,10 +241,10 @@ module GHCIDebug {
 
             var finishStringPosition = this.currentCommandBuffer.search(this.commandFinishedString);
             if(finishStringPosition !== -1){
-                if(atom.devMode)
-                    console.log(this.currentCommandBuffer);
+                let outputString = this.currentCommandBuffer.slice(0, finishStringPosition);
 
-                this.currentCommandCallback(this.currentCommandBuffer.slice(0, finishStringPosition));
+                this.emitter.emit("console-output", outputString);
+                this.currentCommandCallback(outputString);
 
                 // Take the finished string off the buffer and process the next ouput
                 this.currentCommandBuffer = this.currentCommandBuffer.slice(
@@ -241,23 +253,25 @@ module GHCIDebug {
             }
         }
 
-        public run(commandText: string, emitStatusChanges?: boolean, emitHistoryLength?: boolean): Promise<string>{
+        public run(commandText: string, emitStatusChanges?: boolean, emitHistoryLength?: boolean, emitCommand?: boolean): Promise<string>{
             var shiftAndRunCommand = () => {
                 var command = this.commands.shift();
 
                 this.currentCommandCallback = command.onFinish;
 
-                if(atom.devMode)
-                    console.log(command.text);
+                if(command.shouldEmit)
+                    this.emitter.emit("command-issued", command.text);
 
                 this.stdin.write(command.text + os.EOL);
             }
 
             emitStatusChanges = emitStatusChanges || false;
             emitHistoryLength = emitHistoryLength || false;
+            emitCommand = emitCommand || false;
             return new Promise(fulfil => {
                 var command: Command = {
                     text: commandText,
+                    shouldEmit: emitCommand,
                     onFinish: (output) => {
                         this.currentCommandCallback = null;
 
