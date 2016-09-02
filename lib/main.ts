@@ -4,7 +4,7 @@ import BreakpointUI = require("./BreakpointUI");
 import TooltipOverride = require("./TooltipOverride");
 
 module Main{
-    export var breakpointUI: BreakpointUI;
+    export var breakpointUI = new BreakpointUI();;
     export var debugger_: Debugger = null;
     export var tooltipOverride = new TooltipOverride(async (expression) => {
         if(debugger_ === null) return null
@@ -45,33 +45,36 @@ module Main{
             }
         },
         "toggle-breakpoint": () => {
-            breakpointUI.toggleBreakpoint(atom.workspace.getActiveTextEditor().getCursorBufferPosition().row);
+            var te = atom.workspace.getActiveTextEditor();
+
+            breakpointUI.toggleBreakpoint(
+                te.getCursorBufferPosition().row,
+                te
+            );
         }
     }
 
     export function activate(){
-        atom.workspace.observeTextEditors((te: AtomCore.IEditor) => {
-            var scopes = te.getRootScopeDescriptor().scopes;
-            if(scopes.length == 1 &&
-                scopes[0] == "source.haskell"){
-                    breakpointUI = new BreakpointUI();
-            }
-        })
-
         atom.workspace.observeActivePaneItem((pane) => {
-            if(debugger_ == null){
-                return;
-            }
             if(pane instanceof atomAPI.TextEditor){
                 var te: AtomCore.IEditor = pane;
                 var scopes = te.getRootScopeDescriptor().scopes;
-                if(scopes.length == 1 &&
-                    scopes[0] == "source.haskell"){
+                if(scopes.length == 1 && scopes[0] == "source.haskell"){
+                    if(!te["hasHaskellBreakpoints"]){
+                        breakpointUI.patchTextEditor(te);
+                        te["hasHaskellBreakpoints"] = true;
+                    }
+
+                    if(debugger_ != null){
                         debugger_.showPanels();
-                        return;
+                    }
+                    return;
                 }
             }
-            debugger_.hidePanels();
+
+            if(debugger_ != null){
+                debugger_.hidePanels();
+            }
         })
 
         for(var command of Object.keys(commands)){

@@ -2,9 +2,7 @@ import atomAPI = require("atom");
 
 class BreakpointUI {
     breakpoints: Map<number, Breakpoint> = new Map();
-    toggleBreakpoint(lineNumber: number){
-        var te = atom.workspace.getActiveTextEditor();
-
+    toggleBreakpoint(lineNumber: number, te: AtomCore.IEditor){
         if(this.breakpoints.has(lineNumber)){
             te.destroyMarker(this.breakpoints.get(lineNumber).marker.id);
             this.breakpoints.delete(lineNumber);
@@ -23,20 +21,17 @@ class BreakpointUI {
             })
         }
     }
-    
-    constructor(){
-        setTimeout(() => {
-            var te = atom.workspace.getActiveTextEditor();
-            var lineNumbersModal = te.gutterWithName("line-number");
-            var view = <HTMLElement>atom.views.getView(lineNumbersModal);
-            view.addEventListener("click", ev => {
-                var scopes = te.getRootScopeDescriptor().scopes;
-                if(scopes.length == 1 && scopes[0] == "source.haskell"){
-                    var lineNumber: number = parseInt(ev["path"][0].dataset.bufferRow);
-                    this.toggleBreakpoint(lineNumber);
-                }
-            })
-        }, 0)
+
+    patchTextEditor(te: AtomCore.IEditor){
+        var lineNumbersModal = te.gutterWithName("line-number");
+        var view = <HTMLElement>atom.views.getView(lineNumbersModal);
+        view.addEventListener("click", ev => {
+            var scopes = te.getRootScopeDescriptor().scopes;
+            if(scopes.length == 1 && scopes[0] == "source.haskell"){
+                var lineNumber: number = parseInt(ev["path"][0].dataset.bufferRow);
+                this.toggleBreakpoint(lineNumber, te);
+            }
+        })
     }
 }
 

@@ -4,7 +4,7 @@ import os = require("os");
 import atomAPI = require("atom");
 var Emitter = require("./Emitter");
 
-var atom = atom || {devMode: false};
+var atom = atom || {devMode: true};
 
 module GHCIDebug {
     function getPenultimateLine(str: string){
