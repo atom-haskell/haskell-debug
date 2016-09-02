@@ -14,7 +14,7 @@ class DebugView  {
 
     /** Event Handler
       *
-      * Events corrispond to the button pressed. These are: forward, back, continue or stop.
+      * Events correspond to the button pressed. These are: forward, back, continue or stop.
       */
     public emitter: DebugViewEmitter = new atomAPI.Emitter();
 
