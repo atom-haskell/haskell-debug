@@ -7,11 +7,6 @@ var Emitter = require("./Emitter");
 var atom = atom || {devMode: true};
 
 module GHCIDebug {
-    function getPenultimateLine(str: string){
-        var lines = str.split("\n");
-        return lines[lines.length - 1];
-    }
-
     export interface BreakInfo{
         filename: string;
         range: number[][];
@@ -253,7 +248,7 @@ module GHCIDebug {
             }
         }
 
-        public run(commandText: string, emitStatusChanges?: boolean, emitHistoryLength?: boolean, emitCommand?: boolean): Promise<string>{
+        public run(commandText: string, emitStatusChanges?: boolean, emitHistoryLength?: boolean, emitCommand?: boolean/*default true*/): Promise<string>{
             var shiftAndRunCommand = () => {
                 var command = this.commands.shift();
 
@@ -267,7 +262,7 @@ module GHCIDebug {
 
             emitStatusChanges = emitStatusChanges || false;
             emitHistoryLength = emitHistoryLength || false;
-            emitCommand = emitCommand || false;
+            emitCommand = emitCommand || true;
             return new Promise(fulfil => {
                 var command: Command = {
                     text: commandText,

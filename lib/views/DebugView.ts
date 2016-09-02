@@ -38,12 +38,18 @@ class DebugView  {
         _.values(this.buttons).forEach((button) => button.startClick = false);
     }
 
-    disableAllButtons(){
-        _.values(this.buttons).forEach(button => button.isEnabled = false);
+    disableAllDebugButtons(){
+        _.values(this.buttons).forEach(button => {
+            if(button != this.buttons.stop)
+                button.isEnabled = false
+        });
     }
 
-    enableAllButtons(){
-        _.values(this.buttons).forEach(button => button.isEnabled = true);
+    enableAllDebugButtons(){
+        _.values(this.buttons).forEach(button => {
+            if(button != this.buttons.stop)
+                button.isEnabled = true
+        });
     }
 
     destroy(){

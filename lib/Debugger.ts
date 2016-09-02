@@ -12,7 +12,7 @@ class Debugger{
     private lineHighlighter = new LineHighlighter();
     private ghciDebug = new GHCIDebug();
     private debugView = new DebugView();
-    private historyState = new HistoryState(this.debugView.buttons);
+    private historyState = new HistoryState();
     private debugPanel: AtomCore.Panel;
     private currentVariablesView = new CurrentVariablesView();
     private currentVariablesPanel: AtomCore.Panel;
@@ -55,12 +55,20 @@ class Debugger{
         });
     }
 
+    private debuggerEnabled = false;
+
     private launchGHCIDebug(breakpoints: Map<number, Breakpoint>){
         this.ghciDebug.emitter.on("line-changed", (info: BreakInfo) => {
             this.lineHighlighter.hightlightLine(info);
+
             if(info.historyLength !== undefined){
                 this.historyState.setMaxPosition(info.historyLength);
             }
+            this.debugView.enableAllDebugButtons();
+            this.debugView.buttons.back.isEnabled = this.historyState.backEnabled;
+            this.debugView.buttons.forward.isEnabled = this.historyState.forwardEnabled;
+            this.debuggerEnabled = true;
+
             this.currentVariablesView.updateList(info.localBindings);
         })
 
@@ -72,6 +80,16 @@ class Debugger{
             this.ghciDebug = null;
             this.destroy()
         })
+
+        this.ghciDebug.emitter.on("command-issued", () => {
+            this.debuggerEnabled = false;
+            setTimeout(() => {
+                if(!this.debuggerEnabled)
+                    this.debugView.disableAllDebugButtons();
+            }, 100);
+        })
+
+        this.debugView.disableAllDebugButtons();
 
         var fileToDebug = atom.workspace.getActiveTextEditor().getPath()
         this.ghciDebug.loadModule(fileToDebug);

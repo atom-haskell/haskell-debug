@@ -5,7 +5,7 @@ class Button{
     element: HTMLElement;
     emitter = new atomAPI.Emitter();
     startClick = false;
-    private _isEnabled: boolean;
+    private _isEnabled = true;
     private tooltip: AtomCore.Disposable;
 
     set isEnabled(enabled: boolean){
@@ -15,6 +15,8 @@ class Button{
         else{
             this.element.classList.add("disabled");
         }
+
+        this._isEnabled = enabled;
     }
 
     destroy(){
@@ -35,7 +37,7 @@ class Button{
             this.startClick = true;
         })
         this.element.addEventListener("click", () => {
-            if(this.startClick)
+            if(this.startClick && this._isEnabled)
                 this.emitter.emit("click", null)
         });
     }

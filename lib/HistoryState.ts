@@ -2,11 +2,10 @@ import Button = require("./views/Button");
 
 class HistoryState{
     private _maxPosition = 0;
+    backEnabled = true;
+    forwardEnabled = true;
 
-    constructor(private buttons: {
-        forward: Button;
-        back: Button
-    }){};
+    constructor(){};
 
     public setMaxPosition(newLength: number){
         this._maxPosition = newLength;
@@ -35,8 +34,8 @@ class HistoryState{
     }
 
     private updateButtonsState(){
-        this.buttons.forward.isEnabled = this._currentPosition != 0;
-        this.buttons.back.isEnabled = this._currentPosition != this._maxPosition;
+        this.forwardEnabled = this._currentPosition != 0;
+        this.backEnabled = this._currentPosition != this._maxPosition;
     }
 }
 
