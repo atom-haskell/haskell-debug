@@ -112,6 +112,11 @@ module GHCIDebug {
         /** resolved the given expression using :print, returns null if it is invalid
         */
         public async resolveExpression(expression: string){
+            // expressions can't have new lines
+            if(expression.indexOf("\n") != -1){
+                return null;
+            }
+
             var getExpression = (ghciOutput: string, variable: string): string => {
                 var matchResult = ghciOutput.match(/[^ ]* = (.*)/);
                 if(matchResult === null) return null;
@@ -168,12 +173,15 @@ module GHCIDebug {
         }
 
         private async getHistoryLength(){
-            var historyQuery = await this.run(":history");
+            var historyQuery = await this.run(":history 100");
             const regex = /-(\d*).*(?:\n|\r|\r\n)<end of history>$/;
 
             var matchResult = historyQuery.match(regex);
             if(matchResult === null){
                 return 0;
+            }
+            else if(historyQuery.slice(-3) == "..."){
+                return Infinity;// history is very long
             }
             else{
                 return parseInt(matchResult[1]);
@@ -197,7 +205,7 @@ module GHCIDebug {
                 func: match => ({
                         filename: match[1],
                         range: [[parseInt(match[2]) - 1, parseInt(match[3]) - 1],
-                            [parseInt(match[2]), parseInt(match[4])]]
+                            [parseInt(match[2]) - 1, parseInt(match[4])]]
                 })
             },{
                 pattern: /\[<exception thrown>\].*> $/,
@@ -260,11 +268,15 @@ module GHCIDebug {
             }
         }
 
-        public run(commandText: string, emitStatusChanges?: boolean, emitHistoryLength?: boolean, emitCommand?: boolean/*default true*/): Promise<string>{
+        public run(commandText: string,
+                emitStatusChanges?: boolean, // emits on command issued and finished with line position
+                emitHistoryLength?: boolean): Promise<string>{
             var shiftAndRunCommand = () => {
                 var command = this.commands.shift();
 
                 this.currentCommandCallback = command.onFinish;
+
+                console.log(command.text)
 
                 if(command.shouldEmit)
                     this.emitter.emit("command-issued", command.text);
@@ -274,17 +286,16 @@ module GHCIDebug {
 
             emitStatusChanges = emitStatusChanges || false;
             emitHistoryLength = emitHistoryLength || false;
-            emitCommand = emitCommand || true;
             return new Promise(fulfil => {
                 var command: Command = {
                     text: commandText,
-                    shouldEmit: emitCommand,
+                    shouldEmit: emitStatusChanges,
                     onFinish: (output) => {
                         this.currentCommandCallback = null;
 
-                        var lastEndOfLine = output.lastIndexOf(os.EOL);
+                        var lastEndOfLinePos = output.lastIndexOf(os.EOL);
 
-                        if(lastEndOfLine == -1){
+                        if(lastEndOfLinePos == -1){
                             /*i.e. no output has been produced*/
                             if(emitStatusChanges){
                                 this.emitStatusChanges(output, "", emitHistoryLength).then(() => {
@@ -294,20 +305,20 @@ module GHCIDebug {
                             fulfil("");
                         }
                         else{
-                            var promptBeginPosition = lastEndOfLine + os.EOL.length;
+                            var promptBeginPosition = lastEndOfLinePos + os.EOL.length;
 
                             if(emitStatusChanges){
                                 this.emitStatusChanges(output.slice(promptBeginPosition, output.length),
-                                    output.slice(0, lastEndOfLine),
+                                    output.slice(0, lastEndOfLinePos),
                                     emitHistoryLength).then(() => {
-                                    fulfil(output.slice(0, lastEndOfLine));
+                                    fulfil(output.slice(0, lastEndOfLinePos));
                                 })
                             }
                             else{
-                                fulfil(output.slice(0, lastEndOfLine));
+                                fulfil(output.slice(0, lastEndOfLinePos));
                             }
                         }
-                        if(this.commands.length !== 0)
+                        if(this.commands.length !== 0 && this.currentCommandCallback === null)
                             shiftAndRunCommand();
                     }
                 }

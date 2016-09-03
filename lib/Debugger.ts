@@ -81,12 +81,17 @@ class Debugger{
             this.destroy()
         })
 
-        this.ghciDebug.emitter.on("command-issued", () => {
+        this.ghciDebug.emitter.on("command-issued", (command) => {
+            //console.log(command);
             this.debuggerEnabled = false;
             setTimeout(() => {
                 if(!this.debuggerEnabled)
                     this.debugView.disableAllDebugButtons();
             }, 100);
+        })
+
+        this.ghciDebug.emitter.on("console-output", (output) => {
+            console.log(output);
         })
 
         this.debugView.disableAllDebugButtons();
@@ -99,9 +104,6 @@ class Debugger{
             else
                 this.ghciDebug.addBreakpoint(ob) //TODO: make this work properly
         });
-        if(/*settings.breakOnError*/ true){
-            this.ghciDebug.pauseOnException();
-        }
         this.ghciDebug.startDebug();
     }
 
