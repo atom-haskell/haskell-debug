@@ -2,6 +2,7 @@ import cp = require("child_process");
 import stream = require("stream");
 import os = require("os");
 import atomAPI = require("atom");
+import path = require("path");
 var Emitter = require("./Emitter");
 
 var atom = atom || {devMode: true};
@@ -83,6 +84,9 @@ module GHCIDebug {
         }
 
         public loadModule(name: string){
+            var cwd = path.dirname(name);
+
+            this.run(`:cd ${cwd}`);
             this.run(`:load ${name}`);
         }
 
@@ -96,10 +100,6 @@ module GHCIDebug {
             else if(level == "error"){
                 this.run(":set -fbreak-on-error");
             }
-        }
-
-        public pauseOnException(){
-            this.run(":set -fbreak-on-exception");
         }
 
         public addBreakpoint(breakpoint: Breakpoint | string){
