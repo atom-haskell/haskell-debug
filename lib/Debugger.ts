@@ -108,6 +108,9 @@ class Debugger{
     constructor(breakpoints: Map<number, Breakpoint>){
         this.launchGHCIDebug(breakpoints);
         this.displayGUI();
+        var listener = atom.config.onDidChange("haskell-debug.breakOnException", ({newValue}) => {
+            this.ghciDebug.setExceptionBreakLevel(<ExceptionBreakLevels> newValue);
+        })
     }
 
     /** For the tooltip override*/

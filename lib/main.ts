@@ -2,6 +2,7 @@ import atomAPI = require("atom");
 import Debugger = require("./Debugger");
 import BreakpointUI = require("./BreakpointUI");
 import TooltipOverride = require("./TooltipOverride");
+import SelectDebugModeView = require("./views/SelectDebugModeView");
 
 module Main{
     export var breakpointUI = new BreakpointUI();;
@@ -51,6 +52,23 @@ module Main{
                 te.getCursorBufferPosition().row,
                 te
             );
+        },
+        "set-break-on-exception": () => {
+            var view = new SelectDebugModeView(debugModes, atom.config.get("haskell-debug.breakOnException"));
+
+            var panel = atom.workspace.addModalPanel({
+                item: view
+            })
+
+            view.focusFilterEditor();
+
+            view.emitter.on("selected", (item: string) => {
+                atom.config.set("haskell-debug.breakOnException", item);
+            })
+
+            view.emitter.on("canceled", () => {
+                panel.destroy();
+            })
         }
     }
 
@@ -81,6 +99,24 @@ module Main{
             atom.commands.add("atom-text-editor[data-grammar='source haskell']",
                               "haskell:" + command,
                               commands[command]);
+        }
+    }
+
+    export var debugModes = [
+        {value: "none", description: 'Don\'t pause on any exceptions'},
+        {value: "errors", description: 'Pause on errors (uncaught exceptions)'},
+        {value: "exceptions", description: 'Pause on exceptions'},
+    ]
+
+    export var config = {
+        "GHCICommand": {
+            type: "string",
+            default: "ghci"
+        },
+        "breakOnException": {
+            type: "string",
+            default: "none",
+            enum: debugModes
         }
     }
 

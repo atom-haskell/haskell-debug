@@ -13,6 +13,11 @@ declare module AtomCore{
         }
     }
 
+    interface IConfig {
+        set(keyPath: string, value: string): any;
+        onDidChange(keyPath: string, func: (options: {newValue: string, oldValue: string}) => any);
+	}
+
     interface IGutter{
         hide(): void;
         show(): void;

@@ -35,6 +35,7 @@
         "lib/views/ReactPolyfill.ts",
         "newTypings/atom.d.ts",
         "newTypings/atomExt.d.ts",
+        "newTypings/atomSpacePenViews.d.ts",
         "newTypings/draggable.d.ts",
         "newTypings/highlights.d.ts",
         "newTypings/reactPolyfill.d.ts",
@@ -52,7 +53,8 @@
         "typings/space-pen/space-pen.d.ts",
         "typings/status-bar/status-bar.d.ts",
         "typings/text-buffer/text-buffer.d.ts",
-        "lib/views/CurrentVariablesView.tsx"
+        "lib/views/CurrentVariablesView.tsx",
+        "lib/views/SelectDebugModeView.tsx"
     ],
     "atom": {
         "rewriteTsconfig": true

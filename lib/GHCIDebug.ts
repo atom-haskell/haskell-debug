@@ -86,6 +86,18 @@ module GHCIDebug {
             this.run(`:load ${name}`);
         }
 
+        public setExceptionBreakLevel(level: ExceptionBreakLevels){
+            this.run(":unset -fbreak-on-exception");
+            this.run(":unset -fbreak-on-error");
+
+            if(level == "exceptions"){
+                this.run(":set -fbreak-on-exception");
+            }
+            else if(level == "error"){
+                this.run(":set -fbreak-on-error");
+            }
+        }
+
         public pauseOnException(){
             this.run(":set -fbreak-on-exception");
         }

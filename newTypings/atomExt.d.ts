@@ -1,5 +1,4 @@
 /// <reference path="../typings/emissary/emissary.d.ts" />
-/// <reference path="../typings/emissary/emissary.d.ts" />
 
 import Emissary = require("emissary");
 
