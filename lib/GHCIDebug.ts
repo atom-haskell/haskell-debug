@@ -66,6 +66,7 @@ module GHCIDebug {
         public emitter: GHCIDebugEmitter = new Emitter();
 
         constructor(){
+            atom = atom || {devMode: true};
             this.ghci_cmd = cp.spawn("ghci");
             this.stdout = this.ghci_cmd.stdout;
             this.stdin = this.ghci_cmd.stdin;

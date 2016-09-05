@@ -1,13 +1,21 @@
 import {BreakInfo} from "./GHCIDebug";
 
 class LineHighlighter{
-    debugLineMarker: AtomCore.IDisplayBufferMarker = null;
+    private debugLineMarker: AtomCore.IDisplayBufferMarker = null;
+    private currentMarkedEditor: AtomCore.IEditor = null;
 
     async hightlightLine(info: BreakInfo){
         var editor = await atom.workspace.open(info.filename, {searchAllPanes: true});
         editor.scrollToBufferPosition(info.range[0]);
 
-        if(this.debugLineMarker == null){
+        if(this.currentMarkedEditor !== editor && this.debugLineMarker !== null){
+            this.debugLineMarker.destroy();
+            this.debugLineMarker = null;
+        }
+
+        this.currentMarkedEditor = editor;
+
+        if(this.debugLineMarker === null){
             this.debugLineMarker = editor.markBufferRange(info.range, {invalidate: 'never'})
             editor.decorateMarker(this.debugLineMarker, {
                 type: "highlight",
