@@ -1,9 +1,9 @@
 import cp = require("child_process");
 import stream = require("stream");
 import os = require("os");
+import emissary = require("emissary")
 import atomAPI = require("atom");
 import path = require("path");
-var Emitter = require("./Emitter");
 
 var atom = atom || {devMode: true};
 
@@ -20,14 +20,18 @@ module GHCIDebug {
         localBindings: string[];
     }
 
-    export interface GHCIDebugEmitter extends atomAPI.Emitter{
+    export interface GHCIDebugEmitter extends Emissary.IEmitter{
+        on(eventName: "ready", handler: () => any): AtomCore.Disposable;
         on(eventName: "paused-on-exception", handler: (info: ExceptionInfo) => any): AtomCore.Disposable;
+        on(eventName: "error", handler: (text: string) => any): AtomCore.Disposable;
         on(eventName: "line-changed", handler: (info: BreakInfo) => any): AtomCore.Disposable;
         on(eventName: "debug-finished", handler: () => any): AtomCore.Disposable;
         on(eventName: "console-output", handler: (output: string) => any): AtomCore.Disposable;
         on(eventName: "command-issued", handler: (command: string) => any): AtomCore.Disposable;
 
         emit(eventName: "paused-on-exception", value: ExceptionInfo): void;
+        emit(eventName: "ready", value: ExceptionInfo): void;
+        emit(eventName: "error", text: string): void;
         emit(eventName: "line-changed", value: BreakInfo): void;
         emit(eventName: "debug-finished", value: any): void;
         emit(eventName: "console-output", value: string): void;
@@ -52,8 +56,14 @@ module GHCIDebug {
           *
           * Events:
           *
+          * ready: ()
+          *     Emmited when ghci has just stopped executing a command
+          *
           * paused-on-exception: (info: ExceptionInfo)
           *     Emmited when the debugger is at an exception
+          *
+          * error: (text: string)
+          *     Emmited when ghci reports an error for a given command
           *
           * line-changed: (info: BreakInfo)
           *     Emmited when the line that the debugger is on changes
@@ -67,25 +77,34 @@ module GHCIDebug {
           * command-issued: (command: string)
           *     Emmited when a command has been executed
           */
-        public emitter: GHCIDebugEmitter = new Emitter();
+        public emitter: GHCIDebugEmitter = new emissary.Emitter();
 
         constructor(){
             atom = atom || {devMode: true};
+
             this.ghci_cmd = cp.spawn("ghci");
+
             this.stdout = this.ghci_cmd.stdout;
             this.stdin = this.ghci_cmd.stdin;
             this.stderr = this.ghci_cmd.stderr;
-            this.stdout.on("readable", () => this.onReadable());
-            this.stderr.on("readable", () => {
-                if(atom.devMode){
-                    var stderrOutput = this.stderr.read();
-                    if(stderrOutput === null)
-                        return; // this is the end of the input stream
+            this.stdout.on("readable", () => this.onStdoutReadable());
+            this.stderr.on("readable", () => this.onStderrReadable())
 
-                    this.emitter.emit("console-output", stderrOutput.toString());
-                }
-            })
+            this.addReadyEvent();
+
             this.run(`:set prompt "%s> ${this.commandFinishedString}"`);
+        }
+
+        private addReadyEvent(){
+            const eventSubs = [
+                "paused-on-exception",
+                "line-changed",
+                "debug-finished",
+            ]
+
+            for(var eventName of eventSubs){
+                (<any>this.emitter.on)(eventName, () => this.emitter.emit("ready", null));
+            }
         }
 
         public destroy(){
@@ -132,21 +151,29 @@ module GHCIDebug {
                 return matchResult[1];
             }
 
-            // try printing expression
-            var printingResult = getExpression(await this.run(`:print ${expression}`), expression);
-            if(printingResult !== null){
-                return printingResult;
+            // for the code below, ignore errors
+            this.ignoreErrors = true;
+
+            try{
+                // try printing expression
+                var printingResult = getExpression(await this.run(`:print ${expression}`), expression);
+                if(printingResult !== null){
+                    return printingResult;
+                }
+
+                // if that fails assign it to a temporary variable and evaluate that
+                var tempVarNum = 0;
+                var potentialTempVar: string | boolean;
+                do{
+                    potentialTempVar = getExpression(await this.run(`:print temp${tempVarNum}`), `temp${tempVarNum}`)
+                } while(potentialTempVar !== null);
+
+                await this.run(`let temp${tempVarNum} = ${expression}`);
+                return getExpression(await this.run(`:print temp${tempVarNum}`), `temp${tempVarNum}`);
             }
-
-            // if that fails assign it to a temporary variable and evaluate that
-            var tempVarNum = 0;
-            var potentialTempVar: string | boolean;
-            do{
-                potentialTempVar = getExpression(await this.run(`:print temp${tempVarNum}`), `temp${tempVarNum}`)
-            } while(potentialTempVar !== null);
-
-            await this.run(`let temp${tempVarNum} = ${expression}`);
-            return getExpression(await this.run(`:print temp${tempVarNum}`), `temp${tempVarNum}`);
+            finally{
+                this.ignoreErrors = false;
+            }
         }
 
         public forward(){
@@ -258,12 +285,32 @@ module GHCIDebug {
             }
         }
 
+        private ignoreErrors = false;
+        private currentStderrOutput = "";
+        private onStderrReadable(){
+            var stderrOutput = this.stderr.read();
+            if(stderrOutput === null || this.ignoreErrors)
+                return; // this is the end of the input stream
+
+            if(this.currentStderrOutput == ""){
+                var readyPromise = new Promise(resolve => this.emitter.once("ready", () => resolve()));
+                var timeoutPromise = new Promise(resolve => setTimeout(() => resolve(), 2000));// emit after 2 seconds anyway
+
+                Promise.race([readyPromise, timeoutPromise]).then(() => {
+                    this.emitter.emit("error", this.currentStderrOutput);
+                    this.currentStderrOutput = "";
+                })
+            }
+
+            this.currentStderrOutput += stderrOutput;
+        }
+
         private currentCommandBuffer = "";
         private commands = <Command[]>[];
         private currentCommandCallback: (output: string) => any = null;
         private commandFinishedString = "command_finish_o4uB1whagteqE8xBq9oq";
 
-        private onReadable(){
+        private onStdoutReadable(){
             var currentString = (this.stdout.read() || "").toString();
 
             this.currentCommandBuffer += currentString;
@@ -278,7 +325,7 @@ module GHCIDebug {
                 // Take the finished string off the buffer and process the next ouput
                 this.currentCommandBuffer = this.currentCommandBuffer.slice(
                     finishStringPosition + this.commandFinishedString.length);
-                this.onReadable();
+                this.onStdoutReadable();
             }
         }
 

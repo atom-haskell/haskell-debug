@@ -102,6 +102,13 @@ class Debugger{
             console.log(output);
         })
 
+        this.ghciDebug.emitter.on("error", (errorText) => {
+            atom.notifications.addError("GHCI Error", {
+                detail: errorText,
+                dismissable: true
+            })
+        })
+
         this.ghciDebug.setExceptionBreakLevel(atom.config.get("haskell-debug.breakOnException"));
 
         this.debugView.disableAllDebugButtons();

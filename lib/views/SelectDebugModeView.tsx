@@ -1,5 +1,5 @@
 import spacePen = require("atom-space-pen-views");
-import atomAPI = require("atom");
+import emissary = require("emissary")
 import React = require("./ReactPolyfill");
 
 interface Item{
@@ -8,7 +8,7 @@ interface Item{
 }
 
 class SelectDebugModeView extends spacePen.SelectListView<Item>{
-    emitter = new atomAPI.Emitter();
+    emitter = new emissary.Emitter();
     private debugModes: Item[];
     private activeItem: string;
 

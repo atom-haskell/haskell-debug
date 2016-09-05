@@ -1,9 +1,8 @@
-import atomAPI = require("atom");
-
+import emissary = require("emissary")
 
 class Button{
     element: HTMLElement;
-    emitter = new atomAPI.Emitter();
+    emitter = new emissary.Emitter();
     startClick = false;
     private _isEnabled = true;
     private tooltip: AtomCore.Disposable;
