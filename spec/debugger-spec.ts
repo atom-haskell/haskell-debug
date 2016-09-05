@@ -1,4 +1,4 @@
-delete require.cache[require.resolve("../lib/Debugger")];
+/*delete require.cache[require.resolve("../lib/Debugger")];
 import Debugger = require("../lib/Debugger");
 
 declare function waitsForPromise(...args);
@@ -21,4 +21,6 @@ topDescribeFunc("Debugger", () => {
         var breakpoints = new Map<number, Breakpoint>();
         debugger_ = new Debugger(breakpoints);
     })
-})
+})*/
+
+//TODO: finish this
