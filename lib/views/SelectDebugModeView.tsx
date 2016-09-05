@@ -35,7 +35,7 @@ class SelectDebugModeView extends spacePen.SelectListView<Item>{
     }
 
     confirmed(item: Item){
-        this.emitter.emit("selected", item);
+        this.emitter.emit("selected", item.value);
         this.cancel();
     }
 

@@ -11,19 +11,23 @@ module GHCIDebug {
     export interface BreakInfo{
         filename: string;
         range: number[][];
-        onError?: boolean;
         historyLength?: number;
         localBindings: string[]
     }
 
+    export interface ExceptionInfo {
+        historyLength: number;
+        localBindings: string[];
+    }
+
     export interface GHCIDebugEmitter extends atomAPI.Emitter{
-        on(eventName: "paused-on-exception", handler: (name: string) => any): AtomCore.Disposable;
+        on(eventName: "paused-on-exception", handler: (info: ExceptionInfo) => any): AtomCore.Disposable;
         on(eventName: "line-changed", handler: (info: BreakInfo) => any): AtomCore.Disposable;
         on(eventName: "debug-finished", handler: () => any): AtomCore.Disposable;
         on(eventName: "console-output", handler: (output: string) => any): AtomCore.Disposable;
         on(eventName: "command-issued", handler: (command: string) => any): AtomCore.Disposable;
 
-        emit(eventName: "paused-on-exception", value: string): void;
+        emit(eventName: "paused-on-exception", value: ExceptionInfo): void;
         emit(eventName: "line-changed", value: BreakInfo): void;
         emit(eventName: "debug-finished", value: any): void;
         emit(eventName: "console-output", value: string): void;
@@ -48,8 +52,8 @@ module GHCIDebug {
           *
           * Events:
           *
-          * paused-on-exception: (name: string)
-          *     Emmited when the debugger is at an exception. Will raise on-line-change later
+          * paused-on-exception: (info: ExceptionInfo)
+          *     Emmited when the debugger is at an exception
           *
           * line-changed: (info: BreakInfo)
           *     Emmited when the line that the debugger is on changes
@@ -84,6 +88,10 @@ module GHCIDebug {
             this.run(`:set prompt "%s> ${this.commandFinishedString}"`);
         }
 
+        public destroy(){
+            this.stop();
+        }
+
         public loadModule(name: string){
             var cwd = path.dirname(name);
 
@@ -98,7 +106,7 @@ module GHCIDebug {
             if(level == "exceptions"){
                 this.run(":set -fbreak-on-exception");
             }
-            else if(level == "error"){
+            else if(level == "errors"){
                 this.run(":set -fbreak-on-error");
             }
         }
@@ -228,7 +236,12 @@ module GHCIDebug {
             var result = this.parsePrompt(prompt);
 
             if(result == GHCIDebug.pausedOnError) {
-                var exceptionString = await this.run("print _exception");
+                var historyLength = await this.getHistoryLength();
+
+                this.emitter.emit("paused-on-exception", {
+                    historyLength: historyLength,
+                    localBindings: mainBody.split("\n").slice(1)
+                });
             }
             else if(result == GHCIDebug.finishedDebugging){
                 this.emitter.emit("debug-finished", undefined);

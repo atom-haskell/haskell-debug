@@ -16,3 +16,5 @@ test2_helper = "hello"
 test2 = print$ test2_helper
 
 test3_value = 3
+
+test4 = undefined

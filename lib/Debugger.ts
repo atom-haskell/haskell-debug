@@ -7,6 +7,7 @@ import HistoryState = require("./HistoryState");
 import LineHighlighter = require("./LineHighlighter");
 import GHCIDebug = _GHCIDebug.GHCIDebug;
 import BreakInfo = _GHCIDebug.BreakInfo;
+import ExceptionInfo = _GHCIDebug.ExceptionInfo;
 
 class Debugger{
     private lineHighlighter = new LineHighlighter();
@@ -16,15 +17,17 @@ class Debugger{
     private debugPanel: AtomCore.Panel;
     private currentVariablesView = new CurrentVariablesView();
     private currentVariablesPanel: AtomCore.Panel;
+    private disposables = new atomAPI.CompositeDisposable();
 
     private destroy(){
         this.lineHighlighter.destroy();
         if(this.ghciDebug)
-            this.ghciDebug.stop();
+            this.ghciDebug.destroy();
         this.debugView.destroy();
         this.debugPanel.destroy();
         this.currentVariablesPanel.destroy();
         this.currentVariablesView.destroy();
+        this.disposables.dispose();
     }
 
     hidePanels(){
@@ -57,23 +60,28 @@ class Debugger{
 
     private debuggerEnabled = false;
 
+    private updateHistoryLengthAndEnableButtons(historyLength: number){
+        if(historyLength !== undefined){
+            this.historyState.setMaxPosition(historyLength);
+        }
+
+        this.debugView.enableAllDebugButtons();
+        this.debugView.buttons.back.isEnabled = this.historyState.backEnabled;
+        this.debugView.buttons.forward.isEnabled = this.historyState.forwardEnabled;
+        this.debuggerEnabled = true;
+    }
+
     private launchGHCIDebug(breakpoints: Map<number, Breakpoint>){
         this.ghciDebug.emitter.on("line-changed", (info: BreakInfo) => {
             this.lineHighlighter.hightlightLine(info);
-
-            if(info.historyLength !== undefined){
-                this.historyState.setMaxPosition(info.historyLength);
-            }
-            this.debugView.enableAllDebugButtons();
-            this.debugView.buttons.back.isEnabled = this.historyState.backEnabled;
-            this.debugView.buttons.forward.isEnabled = this.historyState.forwardEnabled;
-            this.debuggerEnabled = true;
-
-            this.currentVariablesView.updateList(info.localBindings);
+            this.updateHistoryLengthAndEnableButtons(info.historyLength);
+            this.currentVariablesView.update(info.localBindings, false);
         })
 
-        this.ghciDebug.emitter.on("paused-on-exception", (errorMes: string) => {
-            console.log("Error: " + errorMes)
+        this.ghciDebug.emitter.on("paused-on-exception", (info: ExceptionInfo) => {
+            this.lineHighlighter.destroy();
+            this.updateHistoryLengthAndEnableButtons(info.historyLength);
+            this.currentVariablesView.update(info.localBindings, true);
         })
 
         this.ghciDebug.emitter.on("debug-finished", () => {
@@ -94,6 +102,8 @@ class Debugger{
             console.log(output);
         })
 
+        this.ghciDebug.setExceptionBreakLevel(atom.config.get("haskell-debug.breakOnException"));
+
         this.debugView.disableAllDebugButtons();
 
         var fileToDebug = atom.workspace.getActiveTextEditor().getPath()
@@ -110,9 +120,9 @@ class Debugger{
     constructor(breakpoints: Map<number, Breakpoint>){
         this.launchGHCIDebug(breakpoints);
         this.displayGUI();
-        var listener = atom.config.onDidChange("haskell-debug.breakOnException", ({newValue}) => {
+        this.disposables.add(atom.config.onDidChange("haskell-debug.breakOnException", ({newValue}) => {
             this.ghciDebug.setExceptionBreakLevel(<ExceptionBreakLevels> newValue);
-        })
+        }));
     }
 
     /** For the tooltip override*/
