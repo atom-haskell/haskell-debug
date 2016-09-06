@@ -29,6 +29,8 @@
         "lib/HistoryState.ts",
         "lib/LineHighlighter.ts",
         "lib/main.ts",
+        "lib/TerminalEcho.ts",
+        "lib/TerminalReporter.ts",
         "lib/TooltipOverride.ts",
         "lib/views/Button.ts",
         "lib/views/DebugView.ts",
