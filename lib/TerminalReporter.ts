@@ -10,7 +10,9 @@ class TerminalReporter{
     private server: net.Server;
     private stream: net.Socket = null;
 
-    /**Events: command(command: string)*/
+    /**Events:  command(command: string)
+                close()
+    */
     emitter = new atomAPI.Emitter();
 
     prompt() {
@@ -59,6 +61,9 @@ class TerminalReporter{
 
     destroy(){
         if(this.process != null){
+            this.send({
+                type: "close"
+            })
             this.process.kill();
         }
         this.server.close();
@@ -75,7 +80,7 @@ class TerminalReporter{
                 this.stream.write(this.streamData);
             }
             stream.on("data", data => this.onData(data));
-            stream.on("end", () => console.log("NOOOOO"));
+            stream.on("end", () => this.emitter.emit("close", null));
         })
 
         this.server.listen(connectionPath, () => {

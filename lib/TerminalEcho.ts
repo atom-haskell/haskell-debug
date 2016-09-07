@@ -12,6 +12,8 @@ type Message = {
 } | {
     type: "display-command";
     command: string;
+} | {
+    type: "close";
 }
 
 const PIPE_NAME = "haskell-debug";
@@ -63,6 +65,9 @@ function onMessage(message: Message){
     }
     else if(message.type == "destroy-prompt"){
         rl.close();
+    }
+    else if(message.type == "close"){
+        process.kill(1);
     }
     else{
         rl.prompt();

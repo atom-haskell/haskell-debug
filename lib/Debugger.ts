@@ -129,6 +129,10 @@ class Debugger{
             this.executingCommandFromConsole = false;
         })
 
+        this.terminalReporter.emitter.on("close", () => {
+            this.ghciDebug.stop();
+        })
+
         this.ghciDebug.setExceptionBreakLevel(atom.config.get("haskell-debug.breakOnException"));
 
         this.debugView.disableAllDebugButtons();
