@@ -302,11 +302,11 @@ module GHCIDebug {
         private ignoreErrors = false;
         private currentStderrOutput = "";
         private onStderrReadable(){
-            var stderrOutput: string = this.stderr.read().toString();
+            var stderrOutput: Buffer = this.stderr.read();
             if(stderrOutput === null || this.ignoreErrors)
                 return; // this is the end of the input stream
 
-            this.emitter.emit("error", stderrOutput);
+            this.emitter.emit("error", stderrOutput.toString());
 
             if(this.currentStderrOutput == ""){
                 this.emitter.once("ready", () => {
@@ -315,7 +315,7 @@ module GHCIDebug {
                 })
             }
 
-            this.currentStderrOutput += stderrOutput;
+            this.currentStderrOutput += stderrOutput.toString();
         }
 
         private currentCommandBuffer = "";
