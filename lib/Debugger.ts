@@ -130,7 +130,8 @@ class Debugger{
         })
 
         this.terminalReporter.emitter.on("close", () => {
-            this.ghciDebug.stop();
+            if(this.ghciDebug != null)
+                this.ghciDebug.stop();
         })
 
         this.ghciDebug.setExceptionBreakLevel(atom.config.get("haskell-debug.breakOnException"));

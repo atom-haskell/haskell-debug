@@ -8,7 +8,7 @@ const PIPE_PATH = "haskell-debug";
 class TerminalReporter{
     private process: cp.ChildProcess = null;
     private server: net.Server;
-    private stream: net.Socket = null;
+    private socket: net.Socket = null;
 
     /**Events:  command(command: string)
                 close()
@@ -37,12 +37,17 @@ class TerminalReporter{
 
     private streamData = "";
     private send(data: Object){
-        var sendingData = JSON.stringify(data) + "\n";
+        try{
+            var sendingData = JSON.stringify(data) + "\n";
 
-        if(this.stream == null)
-            this.streamData += sendingData;
-        else
-            this.stream.write(sendingData);
+            if(this.socket == null)
+                this.streamData += sendingData;
+            else
+                this.socket.write(sendingData);
+        }
+        catch(e){
+            //ignore erros
+        }
     }
 
     private totalData = "";
@@ -74,13 +79,15 @@ class TerminalReporter{
             "\\\\.\\pipe\\" + PIPE_PATH : `/tmp/${PIPE_PATH}.sock`;
         var terminalEchoPath = `${atom.packages.getActivePackage("haskell-debug").path}/lib/TerminalEcho.js`;
 
-        this.server = net.createServer(stream => {
-            this.stream = stream
+        this.server = net.createServer(socket => {
+            this.socket = socket
             if(this.streamData !== ""){
-                this.stream.write(this.streamData);
+                this.socket.write(this.streamData);
             }
-            stream.on("data", data => this.onData(data));
-            stream.on("end", () => this.emitter.emit("close", null));
+            socket.on("data", data => this.onData(data));
+            socket.on("end", () => {
+                this.emitter.emit("close", null);
+            });
         })
 
         this.server.listen(connectionPath, () => {
