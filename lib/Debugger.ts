@@ -5,6 +5,7 @@ import CurrentVariablesView = require("./views/CurrentVariablesView");
 import BreakpointUI = require("./BreakpointUI");
 import HistoryState = require("./HistoryState");
 import LineHighlighter = require("./LineHighlighter");
+import TerminalReporter = require("./TerminalReporter");
 import GHCIDebug = _GHCIDebug.GHCIDebug;
 import BreakInfo = _GHCIDebug.BreakInfo;
 import ExceptionInfo = _GHCIDebug.ExceptionInfo;
@@ -17,6 +18,7 @@ class Debugger{
     private debugPanel: AtomCore.Panel;
     private currentVariablesView = new CurrentVariablesView();
     private currentVariablesPanel: AtomCore.Panel;
+    private terminalReporter = new TerminalReporter();
     private disposables = new atomAPI.CompositeDisposable();
 
     private destroy(){
@@ -27,6 +29,7 @@ class Debugger{
         this.debugPanel.destroy();
         this.currentVariablesPanel.destroy();
         this.currentVariablesView.destroy();
+        this.terminalReporter.destroy();
         this.disposables.dispose();
     }
 
@@ -71,7 +74,8 @@ class Debugger{
         this.debuggerEnabled = true;
     }
 
-    private launchGHCIDebug(breakpoints: Map<number, Breakpoint>){
+    private executingCommandFromConsole = false;
+    private launchGHCIDebugAndConsole(breakpoints: Map<number, Breakpoint>){
         this.ghciDebug.emitter.on("line-changed", (info: BreakInfo) => {
             this.lineHighlighter.hightlightLine(info);
             this.updateHistoryLengthAndEnableButtons(info.historyLength);
@@ -90,7 +94,9 @@ class Debugger{
         })
 
         this.ghciDebug.emitter.on("command-issued", (command) => {
-            //console.log(command);
+            if(!this.executingCommandFromConsole)
+                this.terminalReporter.displayCommand(command);
+
             this.debuggerEnabled = false;
             setTimeout(() => {
                 if(!this.debuggerEnabled)
@@ -99,14 +105,28 @@ class Debugger{
         })
 
         this.ghciDebug.emitter.on("console-output", (output) => {
+            this.terminalReporter.write(output);
             console.log(output);
         })
 
+        this.ghciDebug.emitter.on("error-completed", (errorText) => {
+            if(!this.executingCommandFromConsole)
+                atom.notifications.addError("GHCI Error", {
+                    detail: errorText,
+                    dismissable: true
+                })
+        })
+
         this.ghciDebug.emitter.on("error", (errorText) => {
-            atom.notifications.addError("GHCI Error", {
-                detail: errorText,
-                dismissable: true
-            })
+            this.terminalReporter.write(errorText);
+        })
+
+        this.ghciDebug.addedAllListeners();
+
+        this.terminalReporter.emitter.on("command", async command => {
+            this.executingCommandFromConsole = true;
+            await this.ghciDebug.run(command, true, true);
+            this.executingCommandFromConsole = false;
         })
 
         this.ghciDebug.setExceptionBreakLevel(atom.config.get("haskell-debug.breakOnException"));
@@ -115,17 +135,19 @@ class Debugger{
 
         var fileToDebug = atom.workspace.getActiveTextEditor().getPath()
         this.ghciDebug.loadModule(fileToDebug);
+
         breakpoints.forEach(ob => {
             if(ob.file == fileToDebug)
                 this.ghciDebug.addBreakpoint(ob.line.toString());
             else
                 this.ghciDebug.addBreakpoint(ob) //TODO: make this work properly
         });
+
         this.ghciDebug.startDebug();
     }
 
     constructor(breakpoints: Map<number, Breakpoint>){
-        this.launchGHCIDebug(breakpoints);
+        this.launchGHCIDebugAndConsole(breakpoints);
         this.displayGUI();
         this.disposables.add(atom.config.onDidChange("haskell-debug.breakOnException", ({newValue}) => {
             this.ghciDebug.setExceptionBreakLevel(<ExceptionBreakLevels> newValue);

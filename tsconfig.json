@@ -43,6 +43,8 @@
         "newTypings/reactPolyfill.d.ts",
         "spec/debugger-spec.ts",
         "spec/ghciDebug-spec.ts",
+        "test/input.ts",
+        "test/output.ts",
         "typings/atom/atom.d.ts",
         "typings/emissary/emissary.d.ts",
         "typings/jasmine/jasmine.d.ts",

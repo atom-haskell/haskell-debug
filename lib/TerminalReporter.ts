@@ -1,42 +1,87 @@
 import cp = require("child_process");
+import net = require('net');
+import os = require("os");
 import atomAPI = require("atom");
 
-class TerminalReporter{
-    private process: cp.ChildProcess;
+const PIPE_PATH = "haskell-debug";
 
-    /**Events: prompt-entered(message: string)*/
+class TerminalReporter{
+    private process: cp.ChildProcess = null;
+    private server: net.Server;
+    private stream: net.Socket = null;
+
+    /**Events: command(command: string)*/
     emitter = new atomAPI.Emitter();
 
     prompt() {
-        this.process.send({
+        this.send({
             type: "user_input"
         })
     }
 
     write(output: string){
-        this.process.send({
+        this.send({
             type: "message",
             content: output
         })
     }
 
     displayCommand(command: string){
-        this.process.send({
+        this.send({
             type: "display-command",
             command: command
         })
     }
 
+    private streamData = "";
+    private send(data: Object){
+        var sendingData = JSON.stringify(data) + "\n";
+
+        if(this.stream == null)
+            this.streamData += sendingData;
+        else
+            this.stream.write(sendingData);
+    }
+
+    private totalData = "";
+    private onData(data: string){
+        var newLinePos = data.indexOf("\n");
+        if(newLinePos != -1){
+            this.totalData += data.slice(0, newLinePos);
+            this.emitter.emit("command", this.totalData);
+            this.totalData = "";
+            this.onData(data.slice(newLinePos + 1));
+        }
+        else{
+            this.totalData += data;
+        }
+    }
+
     destroy(){
-        this.process.kill();
+        if(this.process != null){
+            this.process.kill();
+        }
+        this.server.close();
     }
 
     constructor(){
+        var connectionPath = os.platform() == "win32" ?
+            "\\\\.\\pipe\\" + PIPE_PATH : `/tmp/${PIPE_PATH}.sock`;
         var terminalEchoPath = `${atom.packages.getActivePackage("haskell-debug").path}/lib/TerminalEcho.js`;
 
-        this.process = cp.exec(`start node ${terminalEchoPath}`);
+        this.server = net.createServer(stream => {
+            this.stream = stream
+            if(this.streamData !== ""){
+                this.stream.write(this.streamData);
+            }
+            stream.on("data", data => this.onData(data));
+            stream.on("end", () => console.log("NOOOOO"));
+        })
 
-        this.process.on("message", (mes: string) => this.emitter.emit("command-issued", mes));
+        this.server.listen(connectionPath, () => {
+            if(atom.config.get("haskell-debug.showDebugger"))
+                this.process = cp.exec(`start node ${terminalEchoPath}`);
+        });
     }
 }
 

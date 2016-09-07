@@ -24,6 +24,7 @@ module GHCIDebug {
         on(eventName: "ready", handler: () => any): AtomCore.Disposable;
         on(eventName: "paused-on-exception", handler: (info: ExceptionInfo) => any): AtomCore.Disposable;
         on(eventName: "error", handler: (text: string) => any): AtomCore.Disposable;
+        on(eventName: "error-completed", handler: (text: string) => any): AtomCore.Disposable;
         on(eventName: "line-changed", handler: (info: BreakInfo) => any): AtomCore.Disposable;
         on(eventName: "debug-finished", handler: () => any): AtomCore.Disposable;
         on(eventName: "console-output", handler: (output: string) => any): AtomCore.Disposable;
@@ -32,6 +33,7 @@ module GHCIDebug {
         emit(eventName: "paused-on-exception", value: ExceptionInfo): void;
         emit(eventName: "ready", value: ExceptionInfo): void;
         emit(eventName: "error", text: string): void;
+        emit(eventName: "error-completed", text: string): void;
         emit(eventName: "line-changed", value: BreakInfo): void;
         emit(eventName: "debug-finished", value: any): void;
         emit(eventName: "console-output", value: string): void;
@@ -40,7 +42,8 @@ module GHCIDebug {
 
     interface Command{
         text: string;
-        shouldEmit: boolean;
+        emitCommandOutput: boolean;
+        fulfilWithPrompt: boolean;
         onFinish: (output: string) => any;
     }
 
@@ -63,6 +66,9 @@ module GHCIDebug {
           *     Emmited when the debugger is at an exception
           *
           * error: (text: string)
+          *     Emmited when stderr has input
+          *
+          * error-completed: (text: string)
           *     Emmited when ghci reports an error for a given command
           *
           * line-changed: (info: BreakInfo)
@@ -79,6 +85,8 @@ module GHCIDebug {
           */
         public emitter: GHCIDebugEmitter = new emissary.Emitter();
 
+        private startText: Promise<string>;
+
         constructor(){
             atom = atom || {devMode: true};
 
@@ -92,7 +100,7 @@ module GHCIDebug {
 
             this.addReadyEvent();
 
-            this.run(`:set prompt "%s> ${this.commandFinishedString}"`);
+            this.startText = this.run(`:set prompt "%s> ${this.commandFinishedString}"`, false, false, false, true);
         }
 
         private addReadyEvent(){
@@ -156,7 +164,7 @@ module GHCIDebug {
 
             try{
                 // try printing expression
-                var printingResult = getExpression(await this.run(`:print ${expression}`), expression);
+                var printingResult = getExpression(await this.run(`:print ${expression}`, false, false, false), expression);
                 if(printingResult !== null){
                     return printingResult;
                 }
@@ -165,11 +173,11 @@ module GHCIDebug {
                 var tempVarNum = 0;
                 var potentialTempVar: string | boolean;
                 do{
-                    potentialTempVar = getExpression(await this.run(`:print temp${tempVarNum}`), `temp${tempVarNum}`)
+                    potentialTempVar = getExpression(await this.run(`:print temp${tempVarNum}`, false, false, false), `temp${tempVarNum}`)
                 } while(potentialTempVar !== null);
 
                 await this.run(`let temp${tempVarNum} = ${expression}`);
-                return getExpression(await this.run(`:print temp${tempVarNum}`), `temp${tempVarNum}`);
+                return getExpression(await this.run(`:print temp${tempVarNum}`, false, false, false), `temp${tempVarNum}`);
             }
             finally{
                 this.ignoreErrors = false;
@@ -197,19 +205,25 @@ module GHCIDebug {
             this.run(":continue", true);
         }
 
+        public async addedAllListeners(){
+            this.startText.then(text => {
+                var firstPrompt = text.indexOf("> ");
+                this.emitter.emit("console-output", text.slice(0, firstPrompt + 2));
+            })
+        }
+
         async startDebug(moduleName?: string){
             moduleName = moduleName || "main";
             await this.run(":trace " + moduleName, true, true);
         }
 
         async getBindings(){
-            var outputStr = await this.run(":show bindings");
-            var lines = outputStr.split(os.EOL)
-            return lines.slice(0, lines.length - 2);
+            var outputStr = await this.run(":show bindings", false, false, false);
+            return outputStr.split(os.EOL)
         }
 
         private async getHistoryLength(){
-            var historyQuery = await this.run(":history 100");
+            var historyQuery = await this.run(":history 100", false, false, false);
             const regex = /-(\d*).*(?:\n|\r|\r\n)<end of history>$/;
 
             var matchResult = historyQuery.match(regex);
@@ -276,7 +290,7 @@ module GHCIDebug {
             else{
                 var breakInfo = <BreakInfo>result;
 
-                breakInfo.localBindings = mainBody.split("\n").slice(1);
+                breakInfo.localBindings = await this.getBindings();
 
                 if(emitHistoryLength)
                     breakInfo.historyLength = await this.getHistoryLength();
@@ -288,16 +302,15 @@ module GHCIDebug {
         private ignoreErrors = false;
         private currentStderrOutput = "";
         private onStderrReadable(){
-            var stderrOutput = this.stderr.read();
+            var stderrOutput: string = this.stderr.read().toString();
             if(stderrOutput === null || this.ignoreErrors)
                 return; // this is the end of the input stream
 
-            if(this.currentStderrOutput == ""){
-                var readyPromise = new Promise(resolve => this.emitter.once("ready", () => resolve()));
-                var timeoutPromise = new Promise(resolve => setTimeout(() => resolve(), 2000));// emit after 2 seconds anyway
+            this.emitter.emit("error", stderrOutput);
 
-                Promise.race([readyPromise, timeoutPromise]).then(() => {
-                    this.emitter.emit("error", this.currentStderrOutput);
+            if(this.currentStderrOutput == ""){
+                this.emitter.once("ready", () => {
+                    this.emitter.emit("error-completed", this.currentStderrOutput);
                     this.currentStderrOutput = "";
                 })
             }
@@ -307,7 +320,7 @@ module GHCIDebug {
 
         private currentCommandBuffer = "";
         private commands = <Command[]>[];
-        private currentCommandCallback: (output: string) => any = null;
+        private currentCommand: Command = null;
         private commandFinishedString = "command_finish_o4uB1whagteqE8xBq9oq";
 
         private onStdoutReadable(){
@@ -319,8 +332,10 @@ module GHCIDebug {
             if(finishStringPosition !== -1){
                 let outputString = this.currentCommandBuffer.slice(0, finishStringPosition);
 
-                this.emitter.emit("console-output", outputString);
-                this.currentCommandCallback(outputString);
+                if(this.currentCommand.emitCommandOutput)
+                    this.emitter.emit("console-output", outputString);
+
+                this.currentCommand.onFinish(outputString);
 
                 // Take the finished string off the buffer and process the next ouput
                 this.currentCommandBuffer = this.currentCommandBuffer.slice(
@@ -330,16 +345,18 @@ module GHCIDebug {
         }
 
         public run(commandText: string,
-                emitStatusChanges?: boolean, // emits on command issued and finished with line position
-                emitHistoryLength?: boolean): Promise<string>{
+                emitStatusChanges?: boolean,
+                emitHistoryLength?: boolean,
+                emitCommandOutput?: boolean/*default true*/,
+                fulfilWithPrompt?: boolean /*default false*/): Promise<string>{
             var shiftAndRunCommand = () => {
                 var command = this.commands.shift();
 
-                this.currentCommandCallback = command.onFinish;
+                this.currentCommand = command;
 
                 console.log(command.text)
 
-                if(command.shouldEmit)
+                if(command.emitCommandOutput)
                     this.emitter.emit("command-issued", command.text);
 
                 this.stdin.write(command.text + os.EOL);
@@ -347,12 +364,25 @@ module GHCIDebug {
 
             emitStatusChanges = emitStatusChanges || false;
             emitHistoryLength = emitHistoryLength || false;
-            return new Promise(fulfil => {
+            if(emitCommandOutput === undefined) emitCommandOutput = true;
+            if(fulfilWithPrompt === undefined) fulfilWithPrompt = false;
+            var currentPromise: Promise<string>;
+            return currentPromise = new Promise<string>(fulfil => {
                 var command: Command = {
                     text: commandText,
-                    shouldEmit: emitStatusChanges,
-                    onFinish: (output) => {
-                        this.currentCommandCallback = null;
+                    emitCommandOutput: emitCommandOutput,
+                    fulfilWithPrompt: fulfilWithPrompt,
+                    onFinish: async (output) => {
+                        this.currentCommand = null;
+
+                        function _fulfil(noPrompt: string){
+                            if(fulfilWithPrompt){
+                                fulfil(output)
+                            }
+                            else{
+                                fulfil(noPrompt);
+                            }
+                        }
 
                         var lastEndOfLinePos = output.lastIndexOf(os.EOL);
 
@@ -360,10 +390,12 @@ module GHCIDebug {
                             /*i.e. no output has been produced*/
                             if(emitStatusChanges){
                                 this.emitStatusChanges(output, "", emitHistoryLength).then(() => {
-                                    fulfil("");
+                                    _fulfil("");
                                 })
                             }
-                            fulfil("");
+                            else{
+                                _fulfil("");
+                            }
                         }
                         else{
                             var promptBeginPosition = lastEndOfLinePos + os.EOL.length;
@@ -372,21 +404,24 @@ module GHCIDebug {
                                 this.emitStatusChanges(output.slice(promptBeginPosition, output.length),
                                     output.slice(0, lastEndOfLinePos),
                                     emitHistoryLength).then(() => {
-                                    fulfil(output.slice(0, lastEndOfLinePos));
+                                    _fulfil(output.slice(0, lastEndOfLinePos));
                                 })
                             }
                             else{
-                                fulfil(output.slice(0, lastEndOfLinePos));
+                                _fulfil(output.slice(0, lastEndOfLinePos));
                             }
                         }
-                        if(this.commands.length !== 0 && this.currentCommandCallback === null)
+
+                        await currentPromise;
+
+                        if(this.commands.length !== 0 && this.currentCommand === null)
                             shiftAndRunCommand();
                     }
                 }
 
                 this.commands.push(command);
 
-                if(this.currentCommandCallback === null){
+                if(this.currentCommand === null){
                     shiftAndRunCommand();
                 }
             })

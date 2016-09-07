@@ -1,9 +1,6 @@
 import net = require("net");
+import os = require("os");
 import readline = require("readline");
-
-const rl = readline.createInterface({
-    input: process.stdin
-});
 
 type Message = {
     type: "message";
@@ -17,7 +14,16 @@ type Message = {
     command: string;
 }
 
-var sendHandle: net.Socket;
+const PIPE_NAME = "haskell-debug";
+
+var connectionPath = os.platform() == "win32" ?
+    "\\\\.\\pipe\\" + PIPE_NAME : `/tmp/${PIPE_NAME}.sock`;
+var client = net.connect(connectionPath);
+
+const rl = readline.createInterface({
+    input: process.stdin
+});
+
 var ignoreOutput = false;
 
 rl.on("line", (text: string) => {
@@ -25,17 +31,33 @@ rl.on("line", (text: string) => {
         ignoreOutput = false;
         return;
     }
-    sendHandle.write(text);
+    client.write(text + "\n");
 })
 
-process.on("message", (message: Message, _sendHandle: net.Socket) => {
-    sendHandle = _sendHandle;
+var totalData = "";
+client.on("data", (data: Buffer) => {
+    onData(data.toString());
+})
+
+function onData(data: string){
+    var newLinePos = data.indexOf("\n");
+    if(newLinePos != -1){
+        totalData += data.slice(0, newLinePos);
+        onMessage(JSON.parse(totalData));
+        totalData = "";
+        onData(data.slice(newLinePos + 1));
+    }
+    else{
+        totalData += data;
+    }
+}
+
+function onMessage(message: Message){
     if(message.type == "message"){
         process.stdout.write(message.content);
     }
     else if(message.type == "display-command"){
-        readline.clearLine(process.stdout, 0);
-        process.stdout.write(message.command);
+        process.stdout.write(message.command + "\n");
         ignoreOutput = true;
         rl.write("\n");
     }
@@ -45,4 +67,4 @@ process.on("message", (message: Message, _sendHandle: net.Socket) => {
     else{
         rl.prompt();
     }
-})
+}
