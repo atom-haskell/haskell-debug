@@ -91,12 +91,15 @@ module GHCIDebug {
             atom = atom || {devMode: true};
 
             this.ghci_cmd = cp.spawn("ghci");
+            this.ghci_cmd.on("exit", () => {
+                this.emitter.emit("debug-finished", null)
+            })
 
             this.stdout = this.ghci_cmd.stdout;
             this.stdin = this.ghci_cmd.stdin;
             this.stderr = this.ghci_cmd.stderr;
             this.stdout.on("readable", () => this.onStdoutReadable());
-            this.stderr.on("readable", () => this.onStderrReadable())
+            this.stderr.on("readable", () => this.onStderrReadable());
 
             this.addReadyEvent();
 
