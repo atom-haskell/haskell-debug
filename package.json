@@ -1,7 +1,7 @@
 {
   "name": "haskell-debug",
-  "version": "1.0.0",
-  "description": "Implements a haskell debugger in atom using ghci",
+  "version": "0.0.0",
+  "description": "Implements a graphical haskell debugger in atom, using ghci.",
   "main": "lib/main.js",
   "scripts": {
     "test": "jasmine"
@@ -12,7 +12,7 @@
   },
   "keywords": [
     "haskell",
-    "debug"
+    "debugger"
   ],
   "author": "Thomas Hickman",
   "license": "MIT",
@@ -35,5 +35,8 @@
   },
   "devDependencies": {
     "jasmine": "^2.4.1"
+  },
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
   }
 }
