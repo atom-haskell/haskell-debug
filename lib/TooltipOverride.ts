@@ -36,7 +36,6 @@ class TooltipOverride {
     consumeHaskellUpi(_upi: HaskellUPIContainer){
         var pluginDisposable = new atomAPI.CompositeDisposable();
         var upi = _upi.registerPlugin(pluginDisposable);
-        console.log(upi);
         var prevShowTooltip = upi.showTooltip;
         var _this = this;
         upi["__proto__"].showTooltip = function (arg: ShowTooltipArgs) {

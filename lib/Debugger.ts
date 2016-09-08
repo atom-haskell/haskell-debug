@@ -106,7 +106,6 @@ class Debugger{
 
         this.ghciDebug.emitter.on("console-output", (output) => {
             this.terminalReporter.write(output);
-            console.log(output);
         })
 
         this.ghciDebug.emitter.on("error-completed", (errorText) => {
@@ -148,7 +147,7 @@ class Debugger{
                 this.ghciDebug.addBreakpoint(ob) //TODO: make this work properly
         });
 
-        this.ghciDebug.startDebug();
+        this.ghciDebug.startDebug(atom.config.get("haskell-debug.functionToDebug"));
     }
 
     constructor(breakpoints: Map<number, Breakpoint>){

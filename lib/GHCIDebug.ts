@@ -5,7 +5,7 @@ import emissary = require("emissary")
 import atomAPI = require("atom");
 import path = require("path");
 
-var atom = atom || {devMode: true};
+declare var GLOBAL;
 
 module GHCIDebug {
     export interface BreakInfo{
@@ -88,9 +88,27 @@ module GHCIDebug {
         private startText: Promise<string>;
 
         constructor(){
-            atom = atom || {devMode: true};
+            if(typeof atom == "undefined"){
+                GLOBAL["atom"] = {
+                    devMode: false,
+                    config: {
+                        get: (value: string) => {
+                            if(value == "haskell-debug.GHCICommand"){
+                                return "ghci";
+                            }
+                            else if(value == "haskell-debug.GHCIArguments"){
+                                return "";
+                            }
+                            else{
+                                throw new Error(`Unrecognied config ${value}`);
+                            }
+                        }
+                    }
+            };
+            }
 
-            this.ghci_cmd = cp.spawn("ghci");
+            this.ghci_cmd = cp.spawn(atom.config.get("haskell-debug.GHCICommand"),
+                atom.config.get("haskell-debug.GHCIArguments").split(" "));
             this.ghci_cmd.on("exit", () => {
                 this.emitter.emit("debug-finished", null)
             })
@@ -356,8 +374,6 @@ module GHCIDebug {
                 var command = this.commands.shift();
 
                 this.currentCommand = command;
-
-                console.log(command.text)
 
                 if(command.emitCommandOutput)
                     this.emitter.emit("command-issued", command.text);

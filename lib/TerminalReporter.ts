@@ -1,6 +1,7 @@
 import cp = require("child_process");
 import net = require('net');
 import os = require("os");
+import util = require("util");
 import atomAPI = require("atom");
 
 const PIPE_PATH = "haskell-debug";
@@ -91,8 +92,12 @@ class TerminalReporter{
         })
 
         this.server.listen(connectionPath, () => {
-            if(atom.config.get("haskell-debug.showDebugger"))
-                this.process = cp.exec(`start node ${terminalEchoPath}`);
+            if(atom.config.get("haskell-debug.showTerminal")){
+                var nodeCommand = `${atom.config.get("haskell-debug.nodeCommand")} ${terminalEchoPath}`;
+                var commandToRun = util.format(nodeCommand, atom.config.get("haskell-debug.terminalCommand"))
+                
+                this.process = cp.exec(commandToRun);
+            }
         });
     }
 }
