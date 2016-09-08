@@ -107,8 +107,14 @@ module GHCIDebug {
             };
             }
 
-            this.ghci_cmd = cp.spawn(atom.config.get("haskell-debug.GHCICommand"),
-                atom.config.get("haskell-debug.GHCIArguments").split(" "));
+            if(atom.config.get("haskell-debug.GHCIArguments") === ""){
+                this.ghci_cmd = cp.spawn(atom.config.get("haskell-debug.GHCICommand"));
+            }
+            else{
+                this.ghci_cmd = cp.spawn(atom.config.get("haskell-debug.GHCICommand"),
+                    atom.config.get("haskell-debug.GHCIArguments").split(" "));
+            }
+            
             this.ghci_cmd.on("exit", () => {
                 this.emitter.emit("debug-finished", null)
             })

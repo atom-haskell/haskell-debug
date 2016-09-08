@@ -67,7 +67,7 @@ function onMessage(message: Message){
         rl.close();
     }
     else if(message.type == "close"){
-        process.kill(1);
+        process.exit();
     }
     else{
         rl.prompt();

@@ -94,8 +94,8 @@ class TerminalReporter{
         this.server.listen(connectionPath, () => {
             if(atom.config.get("haskell-debug.showTerminal")){
                 var nodeCommand = `${atom.config.get("haskell-debug.nodeCommand")} ${terminalEchoPath}`;
-                var commandToRun = util.format(nodeCommand, atom.config.get("haskell-debug.terminalCommand"))
-                
+                var commandToRun = util.format(atom.config.get("haskell-debug.terminalCommand"), nodeCommand)
+
                 this.process = cp.exec(commandToRun);
             }
         });
