@@ -27,4 +27,4 @@ To debug the main function of a file, press <kbd>cmd-shift-p</kbd> (Mac) or <kbd
 
 ### Exceptions
 
-To break on exceptions, launch the command palette, type in `set break on exception`, press <kbd>enter</kbd> and select the appropriate option. Note: breaking on exception may cause the debugger to freeze in some instances. See [#4](https://github.com/ThomasHickman/haskell-debug/issues/3]).
+To break on exceptions, launch the command palette, type in `set break on exception`, press <kbd>enter</kbd> and select the appropriate option. Note: breaking on exception may cause the debugger to freeze in some instances. See [#3](https://github.com/ThomasHickman/haskell-debug/issues/3]).
