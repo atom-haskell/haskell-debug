@@ -165,7 +165,7 @@ module Main{
     export var config = {
         "GHCICommand": {
             title: "GHCI Command",
-            description: "The command to run, in order to execute `ghci`",
+            description: "The command to run to execute `ghci``",
             type: "string",
             default: "ghci",
             order: 1
@@ -178,33 +178,33 @@ module Main{
             order: 2
         },
         "nodeCommand": {
-            description: "The command to run, in order to execute node.js",
+            description: "The command to run to execute node.js",
             type: "string",
             default: "node",
             order: 3
 
         },
         "terminalCommand": {
-            description: "The command to run, in order to launch a terminal, where the command launched in a terminal is denoted %s",
+            description: "The command to run to launch a terminal, where the command launched in the terminal is `%s`.",
             type: "string",
             default: getTerminalCommand(),
             order: 4
         },
         "clickGutterToToggleBreakpoint": {
             type: "boolean",
-            description: "In a haskell source file, make clicking on a line number in the gutter toggle the insertion of a breakpoint",
+            description: "Insert a breakpoint when the gutter is clicked in a haskell source file",
             default: true,
             order: 5
         },
         "showTerminal": {
             type: "boolean",
-            description: "Show a terminal with `ghci` running, when debugging",
+            description: "Show a terminal with `ghci` running when debugging",
             default: true,
             order: 6
         },
         "functionToDebug": {
             type: "string",
-            description: "The function to run, when debugging",
+            description: "The function to run when debugging",
             default: "main",
             order: 7
         },
