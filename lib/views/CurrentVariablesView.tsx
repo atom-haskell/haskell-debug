@@ -36,7 +36,7 @@ class CurrentVariablesView {
 
     constructor(){
         this.element =
-        <atom-panel style="z-index: 10;" class="padded">
+        <atom-panel style="z-index: 10" class="padded">
             <div class="inset-panel">
                 <div class="panel-heading">
                     <span>Local Variables </span>
