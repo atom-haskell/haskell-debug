@@ -31,6 +31,16 @@ declare module AtomCore{
         observeActivePaneItem(func: (paneItem: any) => any);
     }
 
+    interface IDisplayBufferMarker{
+        onDidChange(callback: (event: {
+            newHeadBufferPosition: TextBuffer.IPoint,
+            newTailBufferPosition: TextBuffer.IPoint
+            isValid: boolean
+        }) => any): Disposable;
+
+        getProperties(): Object;
+    }
+
     interface TooltipOptions{
         /*More options at http://getbootstrap.com/javascript/#tooltips-options*/
         title: string | (() => any);

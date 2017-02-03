@@ -75,7 +75,7 @@ class Debugger{
     }
 
     private executingCommandFromConsole = false;
-    private launchGHCIDebugAndConsole(breakpoints: Map<number, Breakpoint>){
+    private launchGHCIDebugAndConsole(breakpoints: Breakpoint[]){
         this.ghciDebug.emitter.on("line-changed", (info: BreakInfo) => {
             this.lineHighlighter.hightlightLine(info);
             this.updateHistoryLengthAndEnableButtons(info.historyLength);
@@ -150,7 +150,7 @@ class Debugger{
         this.ghciDebug.startDebug(atom.config.get("haskell-debug.functionToDebug"));
     }
 
-    constructor(breakpoints: Map<number, Breakpoint>){
+    constructor(breakpoints: Breakpoint[]){
         this.launchGHCIDebugAndConsole(breakpoints);
         this.displayGUI();
         this.disposables.add(atom.config.onDidChange("haskell-debug.breakOnException", ({newValue}) => {

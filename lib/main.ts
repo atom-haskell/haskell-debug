@@ -7,8 +7,8 @@ import os = require("os");
 import path = require("path");
 import cp = require("child_process");
 
-module Main{
-    export var breakpointUI = new BreakpointUI();;
+module Main {
+    export var breakpointUI = new BreakpointUI();
     export var debugger_: Debugger = null;
     export var tooltipOverride = new TooltipOverride(async (expression) => {
         if(debugger_ === null) return null
@@ -113,17 +113,19 @@ module Main{
                 var scopes = te.getRootScopeDescriptor().scopes;
                 if(scopes.length == 1 && scopes[0] == "source.haskell"){
                     if(!te["hasHaskellBreakpoints"]){
-                        breakpointUI.patchTextEditor(te);
+                        breakpointUI.attachToNewTextEditor(te);
                         te["hasHaskellBreakpoints"] = true;
                     }
 
                     if(debugger_ != null){
                         debugger_.showPanels();
                     }
-                    return;
+
+                    return;  // don't do below
                 }
             }
 
+            // if any pane that isn't a haskell source file and we're debugging
             if(debugger_ != null){
                 debugger_.hidePanels();
             }
