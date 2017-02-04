@@ -1,8 +1,8 @@
-import atomAPI = require("atom");
 import Debugger = require("./Debugger");
 import BreakpointUI = require("./BreakpointUI");
 import TooltipOverride = require("./TooltipOverride");
 import SelectDebugModeView = require("./views/SelectDebugModeView");
+import atomAPI = require("atom");
 import os = require("os");
 import path = require("path");
 import cp = require("child_process");
@@ -21,6 +21,7 @@ module Main {
 
     export var commands = {
         "debug": () => {
+            var Debugger = require("./Debugger");
             debugger_ = new Debugger(breakpointUI.breakpoints);
         },
         "debug-back": () => {
@@ -57,6 +58,7 @@ module Main {
             );
         },
         "set-break-on-exception": () => {
+            var SelectDebugModeView = require("./views/SelectDebugModeView");
             var view = new SelectDebugModeView(debugModes, atom.config.get("haskell-debug.breakOnException"));
 
             var panel = atom.workspace.addModalPanel({
