@@ -56,7 +56,6 @@ declare module AtomCore{
     interface IAtom {
         tooltips: ITooltipManager;
         devMode: boolean;
-        grammars: any;
     }
 
     interface ITooltipManager{
