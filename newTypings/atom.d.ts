@@ -11,6 +11,7 @@ declare module AtomCore{
         getRootScopeDescriptor(): {
             scopes: string[]
         }
+        scrollToBufferPosition(bufferPosition:any):any;
     }
 
     interface IConfig {

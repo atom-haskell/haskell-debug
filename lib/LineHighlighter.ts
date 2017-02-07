@@ -5,7 +5,7 @@ class LineHighlighter{
     private currentMarkedEditor: AtomCore.IEditor = null;
 
     async hightlightLine(info: BreakInfo){
-        var editor = await atom.workspace.open(info.filename, {searchAllPanes: true});
+        var editor = <AtomCore.IEditor><any>(await atom.workspace.open(info.filename, {searchAllPanes: true}));
         editor.scrollToBufferPosition(info.range[0]);
 
         if(this.currentMarkedEditor !== editor && this.debugLineMarker !== null){
