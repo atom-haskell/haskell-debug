@@ -1,44 +1,12 @@
 import atomAPI = require("atom");
 import {GHCIDebug} from "./GHCIDebug"
-
-interface HaskellUPIContainer{
-    registerPlugin(plugin: atomAPI.CompositeDisposable): HaskellUPI;
-}
-
-type Tooltip = {
-    text: string;
-    highlighter: string
-} | {
-    html: string;
-} | string;
-
-interface TooltipAndRange{
-    range: TextBuffer.IRange;
-    text: Tooltip;
-}
-
-type TooltipContainer = TooltipAndRange | Promise<TooltipAndRange>
-
-interface ShowTooltipArgs{
-    pos: TextBuffer.IPoint;
-    editor: AtomCore.IEditor;
-    eventType: "mouse" | "selection" | "context";
-    tooltip: (range: TextBuffer.IRange) => TooltipContainer;
-}
-
-interface HaskellUPI{
-    onShouldShowTooltip(callback: (editor: AtomCore.IEditor, crange: TextBuffer.IRange,
-        type: "mouse" | "selection") => TooltipContainer);
-    showTooltip(arg: ShowTooltipArgs);
-}
+import * as ideHaskell from "./ide-haskell"
 
 class TooltipOverride {
-    consumeHaskellUpi(_upi: HaskellUPIContainer){
-        var pluginDisposable = new atomAPI.CompositeDisposable();
-        var upi = _upi.registerPlugin(pluginDisposable);
+    consumeHaskellUpi(upi: ideHaskell.HaskellUPI){
         var prevShowTooltip = upi.showTooltip;
         var _this = this;
-        upi["__proto__"].showTooltip = function (arg: ShowTooltipArgs) {
+        upi["__proto__"].showTooltip = function (arg: ideHaskell.ShowTooltipArgs) {
             var prevTooltipFunc = arg.tooltip;
             arg.tooltip = async (range) => {
                 var tooltipAndRange = await prevTooltipFunc(range);

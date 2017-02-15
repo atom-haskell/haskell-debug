@@ -12,7 +12,7 @@ import ExceptionInfo = _GHCIDebug.ExceptionInfo;
 
 class Debugger{
     private lineHighlighter = new LineHighlighter();
-    private ghciDebug = new GHCIDebug();
+    private ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs());
     private debugView = new DebugView();
     private historyState = new HistoryState();
     private debugPanel: AtomCore.Panel;
@@ -20,6 +20,45 @@ class Debugger{
     private currentVariablesPanel: AtomCore.Panel;
     private terminalReporter = new TerminalReporter();
     private disposables = new atomAPI.CompositeDisposable();
+
+    private getGhciCommand(){
+        if(atom.config.get("haskell-debug.useIdeHaskellCabalBuilder")){
+            switch(this.ideCabalBuilderCommand){
+                case "cabal":
+                    return "cabal";
+                case "stack":
+                    return "stack"
+                default:
+                    return atom.config.get("haskell-debug.GHCICommand")
+            }
+        }
+        return atom.config.get("haskell-debug.GHCICommand");
+    }
+
+    private getGhciArgs(){
+        var args = [];
+        var ghciArgs = atom.config.get("haskell-debug.GHCIArguments");
+
+        if(atom.config.get("haskell-debug.useIdeHaskellCabalBuilder")){
+            switch(this.ideCabalBuilderCommand){
+                case "cabal":
+                    args.push("repl")
+                    break;
+                case "stack":
+                    args.push("ghci");
+                    break;
+            }
+        }
+        
+        if(ghciArgs.length > 0
+            && (this.ideCabalBuilderCommand == "cabal"
+            ||  this.ideCabalBuilderCommand == "stack")){
+            return args.concat(`--ghc-options="${atom.config.get("haskell-debug.GHCIArguments")}"`)
+        }
+        else{
+            return args.concat(atom.config.get("haskell-debug.GHCIArguments").split(" "));
+        }
+    }
 
     private destroy(){
         this.lineHighlighter.destroy();
@@ -150,7 +189,7 @@ class Debugger{
         this.ghciDebug.startDebug(atom.config.get("haskell-debug.functionToDebug"));
     }
 
-    constructor(breakpoints: Breakpoint[]){
+    constructor(breakpoints: Breakpoint[], private ideCabalBuilderCommand?: string){
         this.launchGHCIDebugAndConsole(breakpoints);
         this.displayGUI();
         this.disposables.add(atom.config.onDidChange("haskell-debug.breakOnException", ({newValue}) => {

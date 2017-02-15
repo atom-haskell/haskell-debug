@@ -6,6 +6,7 @@ import atomAPI = require("atom");
 import os = require("os");
 import path = require("path");
 import cp = require("child_process");
+import * as haskellIde from "./ide-haskell"
 
 module Main {
     export var breakpointUI = new BreakpointUI();
@@ -22,7 +23,12 @@ module Main {
     export var commands = {
         "debug": () => {
             var Debugger = require("./Debugger");
-            debugger_ = new Debugger(breakpointUI.breakpoints);
+
+            upi.getConfigParam("ide-haskell-cabal", "builder").then(ob => {
+                debugger_ = new Debugger(breakpointUI.breakpoints, ob.name);
+            }).catch(() => {
+                debugger_ = new Debugger(breakpointUI.breakpoints);
+            })
         },
         "debug-back": () => {
             if(debugger_ != null){
@@ -167,9 +173,19 @@ module Main {
     }
 
     export var config = {
+        "useIdeHaskellCabalBuilder": {
+            title: "Use ide-haskell-cabal builder",
+            description: "Use the ide-haskell-cabal builder's command when running ghci - " +
+                "will run `stack ghci` when stack is the builder, `cabal repl` for cabal and " +
+                "`ghci` for none",
+            default: true,
+            type: "boolean",
+            order: 0
+        },
         "GHCICommand": {
             title: "GHCI Command",
-            description: "The command to run to execute `ghci``",
+            description: "The command to run to execute `ghci`, this will get ignore if the" +
+                " previous setting is set to true",
             type: "string",
             default: "ghci",
             order: 1
@@ -186,7 +202,6 @@ module Main {
             type: "string",
             default: "node",
             order: 3
-
         },
         "terminalCommand": {
             description: "The command to run to launch a terminal, where the command launched in the terminal is `%s`.",
@@ -222,8 +237,13 @@ module Main {
         }
     }
 
-    export function consumeHaskellUpi(upi){
-        tooltipOverride.consumeHaskellUpi(upi);
+    var upi: haskellIde.HaskellUPI;
+
+    export function consumeHaskellUpi(upiContainer: haskellIde.HaskellUPIContainer){
+        var pluginDisposable = new atomAPI.CompositeDisposable();
+        var _upi = upiContainer.registerPlugin(pluginDisposable, "haskell-debug");
+        tooltipOverride.consumeHaskellUpi(_upi);
+        upi = _upi;
     }
 }
 

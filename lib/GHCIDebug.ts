@@ -87,34 +87,14 @@ module GHCIDebug {
 
         private startText: Promise<string>;
 
-        constructor(){
-            if(typeof atom == "undefined"){
-                GLOBAL["atom"] = {
-                    devMode: false,
-                    config: {
-                        get: (value: string) => {
-                            if(value == "haskell-debug.GHCICommand"){
-                                return "ghci";
-                            }
-                            else if(value == "haskell-debug.GHCIArguments"){
-                                return "";
-                            }
-                            else{
-                                throw new Error(`Unrecognied config ${value}`);
-                            }
-                        }
-                    }
-            };
-            }
-
-            if(atom.config.get("haskell-debug.GHCIArguments") === ""){
-                this.ghci_cmd = cp.spawn(atom.config.get("haskell-debug.GHCICommand"));
+        constructor(ghciCommand="ghci", ghciArgs=[]){
+            if(ghciArgs.length === 0){
+                this.ghci_cmd = cp.spawn(ghciCommand);
             }
             else{
-                this.ghci_cmd = cp.spawn(atom.config.get("haskell-debug.GHCICommand"),
-                    atom.config.get("haskell-debug.GHCIArguments").split(" "));
+                this.ghci_cmd = cp.spawn(ghciCommand, ghciArgs);
             }
-            
+
             this.ghci_cmd.on("exit", () => {
                 this.emitter.emit("debug-finished", null)
             })
