@@ -1,6 +1,6 @@
 {
   "name": "haskell-debug",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Implements a graphical haskell debugger in atom, using ghci.",
   "main": "lib/main.js",
   "scripts": {
