@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ThomasHickman/haskell-debug.git"
+    "url": "git+https://github.com/atom-haskell/haskell-debug.git"
   },
   "keywords": [
     "haskell",
@@ -17,9 +17,9 @@
   "author": "Thomas Hickman",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ThomasHickman/haskell-debug/issues"
+    "url": "https://github.com/atom-haskell/haskell-debug/issues"
   },
-  "homepage": "https://github.com/ThomasHickman/haskell-debug#readme",
+  "homepage": "https://github.com/atom-haskell/haskell-debug#readme",
   "consumedServices": {
     "ide-haskell-upi": {
       "versions": {
