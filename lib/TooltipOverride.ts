@@ -4,6 +4,7 @@ import * as ideHaskell from "./ide-haskell"
 
 class TooltipOverride {
     consumeHaskellUpi(upi: ideHaskell.HaskellUPI){
+        if(!upi["__proto__"].showTooltip) { return }
         var prevShowTooltip = upi.showTooltip;
         var _this = this;
         upi["__proto__"].showTooltip = function (arg: ideHaskell.ShowTooltipArgs) {
