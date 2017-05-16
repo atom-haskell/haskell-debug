@@ -9,10 +9,11 @@ import TerminalReporter = require("./TerminalReporter");
 import GHCIDebug = _GHCIDebug.GHCIDebug;
 import BreakInfo = _GHCIDebug.BreakInfo;
 import ExceptionInfo = _GHCIDebug.ExceptionInfo;
+import path = require("path");
 
 class Debugger{
     private lineHighlighter = new LineHighlighter();
-    private ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs());
+    private ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), Debugger.getWorkingFolder());
     private debugView = new DebugView();
     private historyState = new HistoryState();
     private debugPanel: AtomCore.Panel;
@@ -27,7 +28,7 @@ class Debugger{
                 case "cabal":
                     return "cabal";
                 case "stack":
-                    return "stack"
+                    return "stack";
                 default:
                     return atom.config.get("haskell-debug.GHCICommand")
             }
@@ -36,13 +37,13 @@ class Debugger{
     }
 
     private getGhciArgs(){
-        var args = [];
-        var ghciArgs = atom.config.get("haskell-debug.GHCIArguments");
+        const args = [];
+        const ghciArgs = atom.config.get("haskell-debug.GHCIArguments");
 
         if(atom.config.get("haskell-debug.useIdeHaskellCabalBuilder")){
             switch(this.ideCabalBuilderCommand){
                 case "cabal":
-                    args.push("repl")
+                    args.push("repl");
                     break;
                 case "stack":
                     args.push("ghci");
@@ -222,6 +223,12 @@ class Debugger{
 
     stop(){
         this.ghciDebug.stop(); // this will trigger debug-finished event
+    }
+
+    private static getWorkingFolder()
+    {
+        const fileToDebug = atom.workspace.getActiveTextEditor().getPath();
+        return path.dirname(fileToDebug);
     }
 }
 

@@ -87,17 +87,13 @@ module GHCIDebug {
 
         private startText: Promise<string>;
 
-        constructor(ghciCommand="ghci", ghciArgs=[]){
-            if(ghciArgs.length === 0){
-                this.ghci_cmd = cp.spawn(ghciCommand);
-            }
-            else{
-                this.ghci_cmd = cp.spawn(ghciCommand, ghciArgs);
-            }
+        constructor(ghciCommand="ghci", ghciArgs=[], folder){
+
+            this.ghci_cmd = cp.spawn(ghciCommand, ghciArgs, {cwd: folder, shell: true});
 
             this.ghci_cmd.on("exit", () => {
                 this.emitter.emit("debug-finished", null)
-            })
+            });
 
             this.stdout = this.ghci_cmd.stdout;
             this.stdin = this.ghci_cmd.stdin;
@@ -115,7 +111,7 @@ module GHCIDebug {
                 "paused-on-exception",
                 "line-changed",
                 "debug-finished",
-            ]
+            ];
 
             for(var eventName of eventSubs){
                 (<any>this.emitter.on)(eventName, () => this.emitter.emit("ready", null));
@@ -164,7 +160,7 @@ module GHCIDebug {
                 var matchResult = ghciOutput.match(/[^ ]* = (.*)/);
                 if(matchResult === null) return null;
                 return matchResult[1];
-            }
+            };
 
             // for the code below, ignore errors
             this.ignoreErrors = true;
@@ -270,7 +266,7 @@ module GHCIDebug {
             },{
                 pattern: /.*> $/,
                 func: () => GHCIDebug.finishedDebugging
-            }]
+            }];
             for (var pattern of patterns){
                 var matchResult = stdOutput.match(pattern.pattern);
                 if(matchResult != null){
@@ -365,7 +361,7 @@ module GHCIDebug {
                     this.emitter.emit("command-issued", command.text);
 
                 this.stdin.write(command.text + os.EOL);
-            }
+            };
 
             emitStatusChanges = emitStatusChanges || false;
             emitHistoryLength = emitHistoryLength || false;
@@ -422,7 +418,7 @@ module GHCIDebug {
                         if(this.commands.length !== 0 && this.currentCommand === null)
                             shiftAndRunCommand();
                     }
-                }
+                };
 
                 this.commands.push(command);
 
