@@ -38,6 +38,7 @@
     "@types/jasmine": "^2.5.41",
     "@types/lodash": "^4.14.52",
     "jasmine": "^2.4.1",
+    "tslint": "^5.5.0",
     "typescript": "^2.4.1"
   },
   "engines": {

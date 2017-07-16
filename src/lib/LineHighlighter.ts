@@ -1,46 +1,45 @@
-import {BreakInfo} from "./GHCIDebug";
+import {BreakInfo} from './GHCIDebug'
 
-class LineHighlighter{
-    private debugLineMarker: AtomCore.IDisplayBufferMarker = null;
-    private currentMarkedEditor: AtomCore.IEditor = null;
+class LineHighlighter {
+    private debugLineMarker?: AtomCore.IDisplayBufferMarker
+    private currentMarkedEditor?: AtomCore.IEditor
 
-    async hightlightLine(info: BreakInfo){
-        var editor = <AtomCore.IEditor><any>(await atom.workspace.open(info.filename, {searchAllPanes: true}));
-        editor.scrollToBufferPosition(info.range[0]);
+    async hightlightLine (info: BreakInfo) {
+        const editor = (await atom.workspace.open(info.filename, {searchAllPanes: true})) as any as AtomCore.IEditor
+        editor.scrollToBufferPosition(info.range[0])
 
-        if(this.currentMarkedEditor !== editor && this.debugLineMarker !== null){
-            this.debugLineMarker.destroy();
-            this.debugLineMarker = null;
+        if (this.currentMarkedEditor !== editor && this.debugLineMarker !== undefined) {
+            this.debugLineMarker.destroy()
+            this.debugLineMarker = undefined
         }
 
-        this.currentMarkedEditor = editor;
+        this.currentMarkedEditor = editor
 
-        if(this.debugLineMarker === null){
+        if (this.debugLineMarker === undefined) {
             this.debugLineMarker = editor.markBufferRange(info.range, {invalidate: 'never'})
             editor.decorateMarker(this.debugLineMarker, {
-                type: "highlight",
-                class: "highlight-green"
+                type: 'highlight',
+                class: 'highlight-green'
             })
             editor.decorateMarker(this.debugLineMarker, {
-                type: "line-number",
-                class: "highlight-green"
+                type: 'line-number',
+                class: 'highlight-green'
             })
             editor.decorateMarker(this.debugLineMarker, {
-                type: "gutter",
-                class: "highlight-green"
+                type: 'gutter',
+                class: 'highlight-green'
             })
-        }
-        else{
-            this.debugLineMarker.setBufferRange(info.range, {});
+        } else {
+            this.debugLineMarker.setBufferRange(info.range, {})
         }
     }
 
-    destroy() {
-        if(this.debugLineMarker !== null){
-            this.debugLineMarker.destroy();
-            this.debugLineMarker = null;
+    destroy () {
+        if (this.debugLineMarker !== undefined) {
+            this.debugLineMarker.destroy()
+            this.debugLineMarker = undefined
         }
     }
 }
 
-export = LineHighlighter;
+export = LineHighlighter

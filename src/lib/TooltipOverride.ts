@@ -1,31 +1,34 @@
-import atomAPI = require("atom");
-import {GHCIDebug} from "./GHCIDebug"
-import * as ideHaskell from "./ide-haskell"
+import * as ideHaskell from './ide-haskell'
+
+function isTextTooltip (tooltip: ideHaskell.Tooltip): tooltip is ideHaskell.TextTooltip {
+  return typeof(tooltip) === 'object' && (tooltip as ideHaskell.TextTooltip).text !== undefined
+}
 
 class TooltipOverride {
-    consumeHaskellUpi(upi: ideHaskell.HaskellUPI){
-        if(!upi["__proto__"].showTooltip) { return }
-        var prevShowTooltip = upi.showTooltip;
-        var _this = this;
-        upi["__proto__"].showTooltip = function (arg: ideHaskell.ShowTooltipArgs) {
-            var prevTooltipFunc = arg.tooltip;
+    consumeHaskellUpi (upi: ideHaskell.HaskellUPI) {
+        if (!upi['__proto__'].showTooltip) { return }
+        // tslint:disable-next-line: no-unbound-method
+        const prevShowTooltip = upi.showTooltip
+        const _this = this
+        upi['__proto__'].showTooltip = function (arg: ideHaskell.ShowTooltipArgs) {
+            const prevTooltipFunc = arg.tooltip
             arg.tooltip = async (range) => {
-                var tooltipAndRange = await prevTooltipFunc(range);
-                var tooltip = tooltipAndRange.text;
+                const tooltipAndRange = await prevTooltipFunc(range)
+                const tooltip = tooltipAndRange.text
 
-                var debugValue = await _this.resolveExpression(arg.editor.getTextInRange(tooltipAndRange.range));
+                const debugValue = await _this.resolveExpression(arg.editor.getTextInRange(tooltipAndRange.range))
 
-                if(debugValue !== null && typeof(tooltip) == "object" && tooltip["text"] !== undefined){
-                    tooltip["text"] = `--type\n${tooltip["text"]}\n--current debug value\n${debugValue}`
+                if (debugValue !== undefined && isTextTooltip(tooltip)) {
+                    tooltip.text = `--type\n${tooltip.text}\n--current debug value\n${debugValue}`
                 }
 
-                return tooltipAndRange;
+                return tooltipAndRange
             }
-            prevShowTooltip.call(this, arg);
+            prevShowTooltip.call(this, arg)
         }
     }
 
-    constructor(private resolveExpression: (expression: string) => Promise<string>){
+    constructor (private resolveExpression: (expression: string) => Promise<string | undefined>) {
     }
 }
 

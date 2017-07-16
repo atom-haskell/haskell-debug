@@ -1,27 +1,23 @@
-module React{
-    export function createElement(tagName: string, attributes: Object, ...extraElements: (HTMLElement | {toString: () => string})[]){
-        var element = document.createElement(tagName);
+export function createElement (
+  tagName: string, attributes: Object, ...extraElements: Array<HTMLElement | {toString: () => string}>) {
+    const element = document.createElement(tagName)
 
-        if(attributes !== null){
-            for(var attribute in attributes){
-                if(attributes.hasOwnProperty(attribute)){
-                    var value = attributes[attribute];
+    if (attributes) {
+        for (const attribute in attributes) {
+            if (attributes.hasOwnProperty(attribute)) {
+                const value = attributes[attribute]
 
-                    element.setAttribute(attribute, value);
-                }
+                element.setAttribute(attribute, value)
             }
         }
-
-        for(var extraElement of extraElements){
-            if(extraElement instanceof HTMLElement){
-                element.appendChild(extraElement);
-            }
-            else{
-                element.appendChild(document.createTextNode(extraElement.toString()));
-            }
-        }
-        return element;
     }
-}
 
-export = React
+    for (const extraElement of extraElements){
+        if (extraElement instanceof HTMLElement) {
+            element.appendChild(extraElement)
+        } else {
+            element.appendChild(document.createTextNode(extraElement.toString()))
+        }
+    }
+    return element
+}

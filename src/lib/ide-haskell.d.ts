@@ -4,12 +4,14 @@ interface HaskellUPIContainer{
     registerPlugin(plugin: atomAPI.CompositeDisposable, name: string): HaskellUPI;
 }
 
-type Tooltip = {
+type TextTooltip = {
     text: string;
     highlighter: string
-} | {
+}
+type HTMLTooltip = {
     html: string;
-} | string;
+}
+type Tooltip = TextTooltip | HTMLTooltip | string;
 
 interface TooltipAndRange{
     range: TextBuffer.IRange;

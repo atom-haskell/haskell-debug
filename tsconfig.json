@@ -17,7 +17,7 @@
         "outDir": "",
         "inlineSources": true,
         "inlineSourceMap": true,
-        "strictNullChecks": false,
+        "strictNullChecks": true,
         "allowJs": false,
         "lib":["dom","es2017"],
         "strict": true
