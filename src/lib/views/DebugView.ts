@@ -1,7 +1,6 @@
 import Draggable = require('draggable')
 import emissary = require('emissary')
 import Button = require('./Button')
-import _ = require('lodash')
 
 interface DebugViewEmitter extends Emissary.IEmitter {
     on (eventName: 'forward' | 'back' | 'continue' | 'stop' | 'step', handler: () => any)
@@ -35,28 +34,29 @@ class DebugView  {
     }
 
     private cancelButtonsClick () {
-        _.values(this.buttons).forEach((button) => button.startClick = false)
+        for (const button of Object.values(this.buttons)) {
+          button.startClick = false
+        }
     }
 
     disableAllDebugButtons () {
-        _.values(this.buttons).forEach((button) => {
+        for (const button of Object.values(this.buttons)) {
             if (button !== this.buttons.stop) {
                 button.isEnabled = false
             }
-        })
+        }
     }
 
     enableAllDebugButtons () {
-        _.values(this.buttons).forEach((button) => {
+        for (const button of Object.values(this.buttons)) {
             if (button !== this.buttons.stop) {
                 button.isEnabled = true
             }
-        })
+        }
     }
 
     destroy () {
-        for (const buttonName of Object.keys(this.buttons)){
-            const button = this.buttons[buttonName] as Button
+        for (const button of Object.values(this.buttons)){
             button.destroy()
         }
     }
