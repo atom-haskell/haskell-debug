@@ -58,7 +58,7 @@ export let commands = {
         const te = atom.workspace.getActiveTextEditor()
 
         breakpointUI.toggleBreakpoint(
-            te.getCursorBufferPosition().row,
+            te.getCursorBufferPosition().row + 1,
             te
         )
     },
