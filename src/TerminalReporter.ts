@@ -52,7 +52,7 @@ class TerminalReporter{
     }
 
     private totalData = "";
-    private onData(data: string){
+    private onData(data: Buffer){
         var newLinePos = data.indexOf("\n");
         if(newLinePos != -1){
             this.totalData += data.slice(0, newLinePos);

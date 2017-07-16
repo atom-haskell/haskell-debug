@@ -110,7 +110,7 @@ interface HTMLAttributes {
     srcSet?: string;
     start?: number;
     step?: number | string;
-    style?: CSSStyleDeclaration;
+    style?: string;
     summary?: string;
     tabIndex?: number;
     target?: string;
