@@ -87,7 +87,7 @@ module GHCIDebug {
 
         private startText: Promise<string>;
 
-        constructor(ghciCommand="ghci", ghciArgs=[], folder){
+        constructor(ghciCommand="ghci", ghciArgs=[], folder?: string){
 
             this.ghci_cmd = cp.spawn(ghciCommand, ghciArgs, {cwd: folder, shell: true});
 
