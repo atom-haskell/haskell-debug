@@ -9,29 +9,23 @@
         "emitDecoratorMetadata": true,
         "declaration": false,
         "noImplicitAny": false,
+        "noImplicitUseStrict": false,
         "removeComments": true,
         "noLib": false,
         "preserveConstEnums": true,
-        "suppressImplicitAnyIndexErrors": true
+        "suppressImplicitAnyIndexErrors": true,
+        "outDir": "lib",
+        "inlineSources": true,
+        "inlineSourceMap": true,
+        "strictNullChecks": false,
+        "allowJs": false,
+        "lib":["dom","es2017"],
+        "strict": true
     },
-    "filesGlob": [
-        "**/*.ts",
-        "**/*.tsx",
-        "!node_modules/**"
-    ],
-    "compileOnSave": true,
-    "buildOnSave": false,
-    "atom": {
-        "rewriteTsconfig": false
-    },
-    "packageDependencies": {
-        "tool-bar": "0.1.9"
-    },
-    "consumedServices": {
-        "tool-bar": {
-            "versions": {
-                "^0.1.0": "consumeToolBar"
-            }
-        }
-    }
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.js",
+        "typings/*.d.ts"
+    ]
 }
