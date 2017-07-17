@@ -131,7 +131,7 @@ class Debugger {
             this.destroy()
         })
 
-        this.ghciDebug.emitter.on('command-issued', (command) => {
+        this.ghciDebug.emitter.on('command-issued', (command: string) => {
             if (!this.executingCommandFromConsole) {
               this.terminalReporter.displayCommand(command)
             }
@@ -144,11 +144,11 @@ class Debugger {
             },         100)
         })
 
-        this.ghciDebug.emitter.on('console-output', (output) => {
+        this.ghciDebug.emitter.on('console-output', (output: string) => {
             this.terminalReporter.write(output)
         })
 
-        this.ghciDebug.emitter.on('error-completed', (errorText) => {
+        this.ghciDebug.emitter.on('error-completed', (errorText: string) => {
             if (!this.executingCommandFromConsole) {
                 atom.notifications.addError('GHCI Error', {
                     detail: errorText,
@@ -157,13 +157,13 @@ class Debugger {
             }
         })
 
-        this.ghciDebug.emitter.on('error', (errorText) => {
+        this.ghciDebug.emitter.on('error', (errorText: string) => {
             this.terminalReporter.write(errorText)
         })
 
         this.ghciDebug.addedAllListeners()
 
-        this.terminalReporter.emitter.on('command', async (command) => {
+        this.terminalReporter.emitter.on('command', async (command: string) => {
             this.executingCommandFromConsole = true
             await this.ghciDebug.run(command, true, true)
             this.executingCommandFromConsole = false

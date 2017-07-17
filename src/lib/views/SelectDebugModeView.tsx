@@ -14,7 +14,7 @@ class SelectDebugModeView extends spacePen.SelectListView<Item> {
         super(debugModes, activeItem)
     }
 
-    initialize (debugModes, activeItem) {
+    initialize (debugModes: Item[], activeItem: string) {
         this.debugModes = debugModes
         this.activeItem = activeItem
 

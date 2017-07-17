@@ -3,7 +3,7 @@ import emissary = require('emissary')
 import Button = require('./Button')
 
 interface DebugViewEmitter extends Emissary.IEmitter {
-    on (eventName: 'forward' | 'back' | 'continue' | 'stop' | 'step', handler: () => any)
+    on (eventName: 'forward' | 'back' | 'continue' | 'stop' | 'step', handler: () => any): any
 }
 
 class DebugView  {
