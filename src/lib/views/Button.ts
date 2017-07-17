@@ -1,9 +1,8 @@
-import emissary = require('emissary')
 import atomAPI = require('atom')
 
 class Button {
     element: HTMLElement
-    emitter = new emissary.Emitter()
+    emitter = new atomAPI.Emitter()
     startClick = false
     private _isEnabled = true
     private tooltip: atomAPI.Disposable

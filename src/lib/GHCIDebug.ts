@@ -1,7 +1,6 @@
 import cp = require('child_process')
 import stream = require('stream')
 import os = require('os')
-import emissary = require('emissary')
 import path = require('path')
 import atomAPI = require('atom')
 
@@ -39,7 +38,7 @@ interface EmitterEmitMap {
   'command-issued': string
 }
 
-export interface GHCIDebugEmitter extends Emissary.IEmitter {
+export interface GHCIDebugEmitter extends atomAPI.Emitter {
     on<K extends keyof EmitterOnMap> (eventName: K, handler: EmitterOnMap[K]): atomAPI.Disposable
     emit<K extends keyof EmitterEmitMap> (eventName: K, value: EmitterEmitMap[K]): void
 }
@@ -85,7 +84,7 @@ export class GHCIDebug {
       * command-issued: (command: string)
       *     Emmited when a command has been executed
       */
-    public emitter: GHCIDebugEmitter = new emissary.Emitter()
+    public emitter: GHCIDebugEmitter = new atomAPI.Emitter()
 
     private startText: Promise<string>
 
@@ -317,9 +316,10 @@ export class GHCIDebug {
         this.emitter.emit('error', stderrOutput.toString())
 
         if (this.currentStderrOutput === '') {
-            this.emitter.once('ready', () => {
+            const disp = this.emitter.on('ready', () => {
                 this.emitter.emit('error-completed', this.currentStderrOutput)
                 this.currentStderrOutput = ''
+                disp.dispose()
             })
         }
 

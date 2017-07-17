@@ -1,8 +1,8 @@
 import Draggable = require('draggable')
-import emissary = require('emissary')
 import Button = require('./Button')
+import atomAPI = require('atom')
 
-interface DebugViewEmitter extends Emissary.IEmitter {
+interface DebugViewEmitter extends atomAPI.Emitter {
     on (eventName: 'forward' | 'back' | 'continue' | 'stop' | 'step', handler: () => any): any
 }
 
@@ -15,7 +15,7 @@ class DebugView  {
       *
       * Events correspond to the button pressed. These are: forward, back, continue or stop.
       */
-    public emitter: DebugViewEmitter = new emissary.Emitter()
+    public emitter: DebugViewEmitter = new atomAPI.Emitter()
 
     buttons: {
         step: Button
