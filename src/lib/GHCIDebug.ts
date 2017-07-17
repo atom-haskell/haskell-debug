@@ -176,14 +176,15 @@ export class GHCIDebug {
             }
 
             // if that fails assign it to a temporary variable and evaluate that
-            const tempVarNum = 0
-            let potentialTempVar: string | boolean | undefined
+            let tempVarNum = 0
+            let potentialTempVar: string | undefined
             do {
                 potentialTempVar = getExpression(
                   await this.run(`:print temp${tempVarNum}`, false, false, false), `temp${tempVarNum}`)
+                tempVarNum += 1
             } while (potentialTempVar !== undefined)
 
-            await this.run(`let temp${tempVarNum} = ${expression}`)
+            await this.run(`let temp${tempVarNum} = ${expression}`, false, false, false)
             return getExpression(await this.run(`:print temp${tempVarNum}`, false, false, false), `temp${tempVarNum}`)
         } finally {
             this.ignoreErrors = false
