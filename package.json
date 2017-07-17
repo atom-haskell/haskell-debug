@@ -23,7 +23,7 @@
   "consumedServices": {
     "ide-haskell-upi": {
       "versions": {
-        "^0.0.1": "consumeHaskellUpi"
+        "^0.3.0": "consumeHaskellUpi"
       }
     }
   },

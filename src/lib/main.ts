@@ -5,7 +5,6 @@ import atomAPI = require('atom')
 import os = require('os')
 import path = require('path')
 import cp = require('child_process')
-import * as haskellIde from './ide-haskell'
 
 export let breakpointUI = new BreakpointUI()
 export let debuggerInst: Debugger | undefined
@@ -23,8 +22,8 @@ export let commands = {
         // tslint:disable-next-line: variable-name
         const Debugger = require('./Debugger')
 
-        upi.getConfigParam('ide-haskell-cabal', 'builder').then((ob) => {
-            debuggerInst = new Debugger(breakpointUI.breakpoints, ob.name)
+        upi.getOthersConfigParam('ide-haskell-cabal', 'builder').then((ob) => {
+            debuggerInst = new Debugger(breakpointUI.breakpoints, ob['name'])
         }).catch(() => {
             debuggerInst = new Debugger(breakpointUI.breakpoints)
         })
@@ -235,11 +234,15 @@ export let config = {
     }
 }
 
-let upi: haskellIde.HaskellUPI
+let upi: UPI.IUPIInstance
 
-export function consumeHaskellUpi (upiContainer: haskellIde.HaskellUPIContainer) {
-    const pluginDisposable = new atomAPI.CompositeDisposable()
-    const _upi = upiContainer.registerPlugin(pluginDisposable, 'haskell-debug')
-    tooltipOverride.consumeHaskellUpi(_upi)
-    upi = _upi
+export function consumeHaskellUpi (reg: UPI.IUPIRegistration) {
+    upi = reg({
+      name: 'haskell-debug',
+      tooltip: {
+        priority: 100,
+        handler: tooltipOverride.tooltipHandler.bind(tooltipOverride)
+      }
+    })
+    return upi
 }
