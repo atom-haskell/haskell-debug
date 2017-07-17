@@ -28,9 +28,9 @@
     }
   },
   "dependencies": {
+    "atom-select-list": "^0.2.0",
     "draggable": "^4.0.4",
-    "lodash": "^4.15.0",
-    "atom-space-pen-views": "^2.2.0"
+    "lodash": "^4.15.0"
   },
   "devDependencies": {
     "@types/jasmine": "^2.5.41",

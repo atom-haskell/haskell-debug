@@ -61,24 +61,10 @@ export let commands = {
             te
         )
     },
-    'set-break-on-exception': () => {
-        // tslint:disable-next-line: variable-name
-        const SelectDebugModeView = require('./views/SelectDebugModeView')
-        const view = new SelectDebugModeView(debugModes, atom.config.get('haskell-debug.breakOnException'))
-
-        const panel = atom.workspace.addModalPanel({
-            item: view
-        })
-
-        view.focusFilterEditor()
-
-        view.emitter.on('selected', (item: string) => {
-            atom.config.set('haskell-debug.breakOnException', item)
-        })
-
-        view.emitter.on('canceled', () => {
-            panel.destroy()
-        })
+    'set-break-on-exception': async () => {
+        const selectDebugModeView = require('./views/SelectDebugModeView')
+        const result = await selectDebugModeView(debugModes, atom.config.get('haskell-debug.breakOnException'))
+        if (result !== undefined) { atom.config.set('haskell-debug.breakOnException', result) }
     }
 }
 

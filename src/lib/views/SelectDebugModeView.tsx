@@ -1,4 +1,4 @@
-import spacePen = require('atom-space-pen-views')
+import SelectListView = require('atom-select-list')
 import React = require('./ReactPolyfill')
 import atomAPI = require('atom')
 
@@ -7,40 +7,35 @@ interface Item {
     description: string
 }
 
-class SelectDebugModeView extends spacePen.SelectListView<Item> {
-    emitter = new atomAPI.Emitter()
-
-    constructor (private debugModes: Item[], private activeItem: string) {
-        super(debugModes, activeItem)
+async function selectDebugModeView (debugModes: Item[], activeItem: string): Promise<string | undefined> {
+    // this.storeFocusedElement()
+    // this.setItems(debugModes)
+    let panel: atomAPI.Panel | undefined
+    let res: string | undefined
+    try {
+      res = await new Promise<string|undefined>((resolve, reject) => {
+        const select = new SelectListView({
+          items: debugModes,
+          itemsClassList: ['mark-active'],
+          elementForItem: (item: Item) => <li class={item.value === activeItem ? 'active' : ''}>{item.description}</li>,
+          filterKeyForItem: (item) => item.value,
+          didCancelSelection: () => {
+            resolve()
+          },
+          didConfirmSelection: (item: Item) => {
+            resolve(item.value)
+          }
+        })
+        panel = atom.workspace.addModalPanel({
+          item: select,
+          visible: true
+        })
+        select.focus()
+      })
+    } finally {
+      panel && panel.destroy()
     }
-
-    initialize (debugModes: Item[], activeItem: string) {
-        this.debugModes = debugModes
-        this.activeItem = activeItem
-
-        super.initialize()
-        this.storeFocusedElement()
-        this.setItems(debugModes)
-        const ol = this.element.querySelector('ol')
-        if (ol) { ol.classList.add('mark-active') }
-    }
-
-    viewForItem (item: Item) {
-        const element = <li>{item.description}</li>
-        if (item.value === this.activeItem) {
-            element.classList.add('active')
-        }
-        return element
-    }
-
-    confirmed (item: Item) {
-        this.emitter.emit('selected', item.value)
-        this.cancel()
-    }
-
-    cancelled () {
-        this.emitter.emit('canceled')
-    }
+    return res
 }
 
-export = SelectDebugModeView
+export = selectDebugModeView
