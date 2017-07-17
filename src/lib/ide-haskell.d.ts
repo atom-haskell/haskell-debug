@@ -14,21 +14,21 @@ type HTMLTooltip = {
 type Tooltip = TextTooltip | HTMLTooltip | string;
 
 interface TooltipAndRange{
-    range: TextBuffer.IRange;
+    range: atomAPI.IRange;
     text: Tooltip;
 }
 
 type TooltipContainer = TooltipAndRange | Promise<TooltipAndRange>
 
 interface ShowTooltipArgs{
-    pos: TextBuffer.IPoint;
-    editor: AtomCore.IEditor;
+    pos: atomAPI.IPoint;
+    editor: atomAPI.TextEditor;
     eventType: "mouse" | "selection" | "context";
-    tooltip: (range: TextBuffer.IRange) => TooltipContainer;
+    tooltip: (range: atomAPI.IRange) => TooltipContainer;
 }
 
 interface HaskellUPI{
-    onShouldShowTooltip(callback: (editor: AtomCore.IEditor, crange: TextBuffer.IRange,
+    onShouldShowTooltip(callback: (editor: atomAPI.TextEditor, crange: atomAPI.IRange,
         type: "mouse" | "selection") => TooltipContainer);
     showTooltip(arg: ShowTooltipArgs);
     getConfigParam(pluginName: string, name: string): Promise<any>;

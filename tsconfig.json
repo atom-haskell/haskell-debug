@@ -25,6 +25,10 @@
     "include": [
         "src/**/*.ts",
         "src/**/*.tsx",
-        "typings/*.d.ts"
+        "typings/*.d.ts",
+        "oldTypings/*.d.ts"
+    ],
+    "exclude": [
+        "typings/etch.d.ts"
     ]
 }

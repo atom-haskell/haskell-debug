@@ -16,7 +16,7 @@ class TooltipOverride {
                 const tooltipAndRange = await prevTooltipFunc(range)
                 const tooltip = tooltipAndRange.text
 
-                const debugValue = await _this.resolveExpression(arg.editor.getTextInRange(tooltipAndRange.range))
+                const debugValue = await _this.resolveExpression(arg.editor.getTextInBufferRange(tooltipAndRange.range))
 
                 if (debugValue !== undefined && isTextTooltip(tooltip)) {
                     tooltip.text = `--type\n${tooltip.text}\n--current debug value\n${debugValue}`

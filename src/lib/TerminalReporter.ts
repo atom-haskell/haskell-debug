@@ -77,7 +77,7 @@ class TerminalReporter {
     constructor () {
         const connectionPath = os.platform() === 'win32' ?
             '\\\\.\\pipe\\' + PIPE_PATH : `/tmp/${PIPE_PATH}.sock`
-        const terminalEchoPath = `${atom.packages.getActivePackage('haskell-debug').path}/lib/TerminalEcho.js`
+        const terminalEchoPath = `${__dirname}/TerminalEcho.js`
 
         this.server = net.createServer((socket) => {
             this.socket = socket

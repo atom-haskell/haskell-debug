@@ -3,13 +3,12 @@ import _ = require('lodash')
 
 class BreakpointUI {
     breakpoints: Breakpoint[] = []
-    markers: WeakMap<Breakpoint, AtomCore.IDisplayBufferMarker> = new WeakMap()
+    markers: WeakMap<Breakpoint, atomAPI.DisplayMarker> = new WeakMap()
 
-    private setBreakpoint (breakpoint: Breakpoint, te: AtomCore.IEditor) {
+    private setBreakpoint (breakpoint: Breakpoint, te: atomAPI.TextEditor) {
         const breakpointMarker = te.markBufferRange(
-            new atomAPI.Range([breakpoint.line - 1, 0], [breakpoint.line, 0]), {
-                invalidate: 'inside'
-            })
+            [[breakpoint.line - 1, 0], [breakpoint.line, 0]],
+            { invalidate: 'inside' })
 
         te.decorateMarker(breakpointMarker, {
             type: 'line-number',
@@ -28,13 +27,13 @@ class BreakpointUI {
         this.breakpoints.push(breakpoint)
     }
 
-    private setFileBreakpoints (te: AtomCore.IEditor) {
+    private setFileBreakpoints (te: atomAPI.TextEditor) {
         _.filter(this.breakpoints, {
             file: te.getPath()
         }).forEach((breakpoint) => this.setBreakpoint(breakpoint, te))
     }
 
-    toggleBreakpoint (lineNumber: number, te: AtomCore.IEditor) {
+    toggleBreakpoint (lineNumber: number, te: atomAPI.TextEditor) {
         const breakpoints = _.remove(this.breakpoints, {
             file: te.getPath(),
             line: lineNumber
@@ -53,13 +52,13 @@ class BreakpointUI {
         }
     }
 
-    attachToNewTextEditor (te: AtomCore.IEditor) {
+    attachToNewTextEditor (te: atomAPI.TextEditor) {
         // patch the text editor to add breakpoints on click
         const lineNumbersModal = te.gutterWithName('line-number')
         const view = atom.views.getView(lineNumbersModal) as HTMLElement
 
         view.addEventListener('click', (ev) => {
-            const scopes = te.getRootScopeDescriptor().scopes
+            const scopes = te.getRootScopeDescriptor().getScopesArray()
             if (scopes.length === 1 && scopes[0] === 'source.haskell'
             && atom.config.get('haskell-debug.clickGutterToToggleBreakpoint')) {
                 const bufferRow = (ev.target as HTMLElement).dataset.bufferRow

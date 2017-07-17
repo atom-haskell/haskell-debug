@@ -1,11 +1,12 @@
 import {BreakInfo} from './GHCIDebug'
+import atomAPI = require('atom')
 
 class LineHighlighter {
-    private debugLineMarker?: AtomCore.IDisplayBufferMarker
-    private currentMarkedEditor?: AtomCore.IEditor
+    private debugLineMarker?: atomAPI.DisplayMarker
+    private currentMarkedEditor?: atomAPI.TextEditor
 
     async hightlightLine (info: BreakInfo) {
-        const editor = (await atom.workspace.open(info.filename, {searchAllPanes: true})) as any as AtomCore.IEditor
+        const editor = (await atom.workspace.open(info.filename, {searchAllPanes: true})) as any as atomAPI.TextEditor
         editor.scrollToBufferPosition(info.range[0])
 
         if (this.currentMarkedEditor !== editor && this.debugLineMarker !== undefined) {

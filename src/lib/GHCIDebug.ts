@@ -3,10 +3,11 @@ import stream = require('stream')
 import os = require('os')
 import emissary = require('emissary')
 import path = require('path')
+import atomAPI = require('atom')
 
 export interface BreakInfo {
     filename: string
-    range: number[][]
+    range: [[number, number], [number, number]]
     historyLength?: number
     localBindings: string[]
 }
@@ -39,7 +40,7 @@ interface EmitterEmitMap {
 }
 
 export interface GHCIDebugEmitter extends Emissary.IEmitter {
-    on<K extends keyof EmitterOnMap> (eventName: K, handler: EmitterOnMap[K]): AtomCore.Disposable
+    on<K extends keyof EmitterOnMap> (eventName: K, handler: EmitterOnMap[K]): atomAPI.Disposable
     emit<K extends keyof EmitterEmitMap> (eventName: K, value: EmitterEmitMap[K]): void
 }
 

@@ -83,7 +83,7 @@ class DebugView  {
             onDragStart: () => this.cancelButtonsClick()
         })
 
-        this.draggable.set(atom.workspace.getActiveTextEditor().getWidth() / 2 - 87/*size of the element*/, 30)
+        this.draggable.set(atom.getSize().width / 2 - 87/*size of the element*/, 30)
     }
 }
 

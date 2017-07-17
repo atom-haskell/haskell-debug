@@ -16,10 +16,10 @@ class Debugger {
     private debugView = new DebugView()
     private historyState = new HistoryState()
     // tslint:disable-next-line: no-uninitialized-class-properties
-    private debugPanel: AtomCore.Panel
+    private debugPanel: atomAPI.Panel
     private currentVariablesView = new CurrentVariablesView()
     // tslint:disable-next-line: no-uninitialized-class-properties
-    private currentVariablesPanel: AtomCore.Panel
+    private currentVariablesPanel: atomAPI.Panel
     private terminalReporter = new TerminalReporter()
     private disposables = new atomAPI.CompositeDisposable()
 

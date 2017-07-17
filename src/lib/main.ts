@@ -117,8 +117,8 @@ export function activate (_state?: HaskellDebugState) {
     }
     atom.workspace.observeActivePaneItem((pane) => {
         if (atom.workspace.isTextEditor(pane)) {
-            const te: AtomCore.IEditor & { hasHaskellBreakpoints?: boolean } = pane
-            const scopes = te.getRootScopeDescriptor().scopes
+            const te: atomAPI.TextEditor & { hasHaskellBreakpoints?: boolean } = pane
+            const scopes = te.getRootScopeDescriptor().getScopesArray()
             if (scopes.length === 1 && scopes[0] === 'source.haskell') {
                 if (!te.hasHaskellBreakpoints) {
                     breakpointUI.attachToNewTextEditor(te)
