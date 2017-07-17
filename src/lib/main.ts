@@ -9,7 +9,7 @@ import cp = require('child_process')
 export let breakpointUI = new BreakpointUI()
 export let debuggerInst: Debugger | undefined
 export let tooltipOverride = new TooltipOverride(async (expression) => {
-    if (debuggerInst === undefined) { return debuggerInst }
+    if (debuggerInst === undefined) { return }
     return debuggerInst.resolveExpression(expression)
 })
 
