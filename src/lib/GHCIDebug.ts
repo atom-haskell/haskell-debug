@@ -152,6 +152,9 @@ export class GHCIDebug {
     /** resolved the given expression using :print, returns null if it is invalid
     */
     public async resolveExpression (expression: string) {
+        if (! expression.trim()) {
+            return
+        }
         // expressions can't have new lines
         if (expression.indexOf('\n') !== -1) {
             return
