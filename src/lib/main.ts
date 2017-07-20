@@ -18,15 +18,16 @@ export let settings = {
 }
 
 export let commands = {
-    'debug': () => {
+    'debug': async () => {
         // tslint:disable-next-line: variable-name
         const Debugger = require('./Debugger')
 
-        upi.getOthersConfigParam('ide-haskell-cabal', 'builder').then((ob) => {
-            debuggerInst = new Debugger(breakpointUI.breakpoints, ob['name'])
-        }).catch(() => {
-            debuggerInst = new Debugger(breakpointUI.breakpoints)
-        })
+        const ob = await upi.getOthersConfigParam<{name: string}>('ide-haskell-cabal', 'builder')
+        if (ob) {
+          debuggerInst = new Debugger(breakpointUI.breakpoints, ob.name)
+        } else {
+          debuggerInst = new Debugger(breakpointUI.breakpoints)
+        }
     },
     'debug-back': () => {
         if (debuggerInst) {
