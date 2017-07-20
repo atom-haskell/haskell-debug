@@ -4,6 +4,7 @@ import path = require('path')
 let topDescribeFunc = describe
 
 // run this with jasmine v2.4
+// tslint:disable-next-line: no-string-literal
 if (!jasmine['version']) {/*defined in 2.x*/
     // tslint:disable-next-line: no-console
     console.warn('WARN: ghciDebug-spec cannot be run in jasmine v < 2')
