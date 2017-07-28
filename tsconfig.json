@@ -8,30 +8,27 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "declaration": false,
-        "noImplicitAny": false,
+        "noImplicitAny": true,
+        "noImplicitUseStrict": false,
         "removeComments": true,
         "noLib": false,
         "preserveConstEnums": true,
-        "suppressImplicitAnyIndexErrors": true
+        "suppressImplicitAnyIndexErrors": true,
+        "outDir": "",
+        "inlineSources": true,
+        "inlineSourceMap": true,
+        "strictNullChecks": true,
+        "allowJs": false,
+        "lib":["dom","es2017"],
+        "strict": true
     },
-    "filesGlob": [
-        "**/*.ts",
-        "**/*.tsx",
-        "!node_modules/**"
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "typings/*.d.ts",
+        "oldTypings/*.d.ts"
     ],
-    "compileOnSave": true,
-    "buildOnSave": false,
-    "atom": {
-        "rewriteTsconfig": false
-    },
-    "packageDependencies": {
-        "tool-bar": "0.1.9"
-    },
-    "consumedServices": {
-        "tool-bar": {
-            "versions": {
-                "^0.1.0": "consumeToolBar"
-            }
-        }
-    }
+    "exclude": [
+        "typings/etch.d.ts"
+    ]
 }

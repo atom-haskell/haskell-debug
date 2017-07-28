@@ -1,7 +1,7 @@
 declare class Highlights{
-    highlightSync(args: Object);
+    highlightSync(args: Object): any;
     highlight(args: Object): Promise<any>;
-    requireGrammarsSync(args: Object);
+    requireGrammarsSync(args: Object): any;
     requireGrammars(args: Object): Promise<any>;
     registry: any;
     constructor(args: Object);
