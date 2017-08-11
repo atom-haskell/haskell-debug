@@ -2,7 +2,9 @@ import atomAPI = require('atom')
 
 class Button {
     element: HTMLElement
-    emitter = new atomAPI.Emitter()
+    emitter: atomAPI.TEmitter<{
+      'click': undefined
+    }> = new atomAPI.Emitter()
     startClick = false
     private _isEnabled = true
     private tooltip: atomAPI.Disposable
@@ -36,7 +38,7 @@ class Button {
         })
         this.element.addEventListener('click', () => {
             if (this.startClick && this._isEnabled) {
-                this.emitter.emit('click')
+                this.emitter.emit('click', undefined)
             }
         })
     }

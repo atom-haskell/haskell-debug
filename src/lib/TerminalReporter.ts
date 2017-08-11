@@ -14,7 +14,10 @@ class TerminalReporter {
     /**Events:  command(command: string)
                 close()
     */
-    emitter = new atomAPI.Emitter()
+    emitter: atomAPI.TEmitter<{
+      'command': string
+      'close': undefined
+    }> = new atomAPI.Emitter()
 
     prompt () {
         this.send({
@@ -86,7 +89,7 @@ class TerminalReporter {
             }
             socket.on('data', (data) => this.onData(data))
             socket.on('end', () => {
-                this.emitter.emit('close')
+                this.emitter.emit('close', undefined)
             })
         })
 

@@ -17,12 +17,8 @@ export let settings = {
     breakOnError: true
 }
 
-interface EditorEvent {
-  currentTarget: { getModel (): atomAPI.TextEditor }
-}
-
 export let commands = {
-    'debug': async ({currentTarget}: EditorEvent) => {
+    'debug': async ({currentTarget}: atomAPI.IEventDesc) => {
         const ob = await upi.getOthersConfigParam<{name: string}>('ide-haskell-cabal', 'builder')
         if (ob) {
           debuggerInst = new Debugger(breakpointUI.breakpoints, currentTarget.getModel(), ob.name)
@@ -55,7 +51,7 @@ export let commands = {
             debuggerInst.continue()
         }
     },
-    'toggle-breakpoint': ({currentTarget}: EditorEvent) => {
+    'toggle-breakpoint': ({currentTarget}: atomAPI.IEventDesc) => {
         breakpointUI.toggleBreakpoint(
             currentTarget.getModel().getCursorBufferPosition().row + 1,
             currentTarget.getModel()

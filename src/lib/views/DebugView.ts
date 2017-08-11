@@ -2,9 +2,7 @@ import Draggable = require('draggable')
 import Button = require('./Button')
 import atomAPI = require('atom')
 
-interface DebugViewEmitter extends atomAPI.Emitter {
-    on (eventName: 'forward' | 'back' | 'continue' | 'stop' | 'step', handler: () => any): any
-}
+type ButtonTypes = 'step' | 'back' | 'forward' | 'continue' | 'stop'
 
 class DebugView  {
     element: HTMLElement
@@ -15,19 +13,17 @@ class DebugView  {
       *
       * Events correspond to the button pressed. These are: forward, back, continue or stop.
       */
-    public emitter: DebugViewEmitter = new atomAPI.Emitter()
+    public emitter: atomAPI.TEmitter<{
+      [K in ButtonTypes]: undefined
+    }> = new atomAPI.Emitter()
 
     buttons: {
-        step: Button
-        back: Button
-        forward: Button
-        continue: Button
-        stop: Button
+      [K in ButtonTypes]: Button
     }
 
-    private addButton (description: string, icon: string, eventName: string) {
+    private addButton (description: string, icon: string, eventName: ButtonTypes) {
         const button = new Button(description, icon)
-        button.emitter.on('click', () => this.emitter.emit(eventName))
+        button.emitter.on('click', () => this.emitter.emit(eventName, undefined))
         this.container.appendChild(button.element)
 
         return button

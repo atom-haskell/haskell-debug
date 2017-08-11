@@ -16,33 +16,6 @@ export interface ExceptionInfo {
     localBindings: string[]
 }
 
-interface EmitterOnMap {
-  'ready': () => any
-  'debug-finished': () => any
-  'paused-on-exception': (info: ExceptionInfo) => any
-  'error': (text: string) => any
-  'error-completed': (text: string) => any
-  'line-changed': (info: BreakInfo) => any
-  'console-output': (output: string) => any
-  'command-issued': (command: string) => any
-}
-
-interface EmitterEmitMap {
-  'paused-on-exception': ExceptionInfo
-  'ready': ExceptionInfo | undefined
-  'error': string
-  'error-completed': string
-  'line-changed': BreakInfo
-  'debug-finished': any
-  'console-output': string
-  'command-issued': string
-}
-
-export interface GHCIDebugEmitter extends atomAPI.Emitter {
-    on<K extends keyof EmitterOnMap> (eventName: K, handler: EmitterOnMap[K]): atomAPI.Disposable
-    emit<K extends keyof EmitterEmitMap> (eventName: K, value: EmitterEmitMap[K]): void
-}
-
 interface Command {
     text: string
     emitCommandOutput: boolean
@@ -84,7 +57,16 @@ export class GHCIDebug {
       * command-issued: (command: string)
       *     Emmited when a command has been executed
       */
-    public emitter: GHCIDebugEmitter = new atomAPI.Emitter()
+    public emitter: atomAPI.TEmitter<{
+      'paused-on-exception': ExceptionInfo
+      'ready': ExceptionInfo | undefined
+      'error': string
+      'error-completed': string
+      'line-changed': BreakInfo
+      'debug-finished': undefined
+      'console-output': string
+      'command-issued': string
+    }> = new atomAPI.Emitter()
 
     private startText: Promise<string>
 
