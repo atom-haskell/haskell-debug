@@ -1,3 +1,7 @@
+## 0.3.1
+* Avoid using getActiveTextEditor, since it's unreliable
+* bump submodules
+
 ## 0.3.0
 * Bump minimal Atom version to 1.19
 * Expression: don't attempt to evaluate empty expressions
