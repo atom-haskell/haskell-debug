@@ -12,7 +12,7 @@ import path = require('path')
 
 class Debugger {
     private lineHighlighter = new LineHighlighter()
-    private ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), Debugger.getWorkingFolder())
+    private ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.getWorkingFolder())
     private debugView = new DebugView()
     private historyState = new HistoryState()
     // tslint:disable-next-line: no-uninitialized-class-properties
@@ -177,7 +177,7 @@ class Debugger {
 
         this.debugView.disableAllDebugButtons()
 
-        const fileToDebug = atom.workspace.getActiveTextEditor().getPath()
+        const fileToDebug = this.editor.getPath()
         this.ghciDebug.loadModule(fileToDebug)
 
         breakpoints.forEach((ob) => {
@@ -191,7 +191,11 @@ class Debugger {
         this.ghciDebug.startDebug(atom.config.get('haskell-debug.functionToDebug'))
     }
 
-    constructor (breakpoints: Breakpoint[], private ideCabalBuilderCommand?: string) {
+    constructor (
+      breakpoints: Breakpoint[],
+      private editor: atomAPI.TextEditor,
+      private ideCabalBuilderCommand?: string
+    ) {
         this.launchGHCIDebugAndConsole(breakpoints)
         this.displayGUI()
         this.disposables.add(atom.config.onDidChange('haskell-debug.breakOnException', ({newValue}) => {
@@ -228,8 +232,8 @@ class Debugger {
         this.ghciDebug.stop() // this will trigger debug-finished event
     }
 
-    private static getWorkingFolder () {
-        const fileToDebug = atom.workspace.getActiveTextEditor().getPath()
+    private getWorkingFolder () {
+        const fileToDebug = this.editor.getPath()
         return path.dirname(fileToDebug)
     }
 }

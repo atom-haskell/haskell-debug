@@ -17,16 +17,17 @@ export let settings = {
     breakOnError: true
 }
 
-export let commands = {
-    'debug': async () => {
-        // tslint:disable-next-line: variable-name
-        const Debugger = require('./Debugger')
+interface EditorEvent {
+  currentTarget: { getModel (): atomAPI.TextEditor }
+}
 
+export let commands = {
+    'debug': async ({currentTarget}: EditorEvent) => {
         const ob = await upi.getOthersConfigParam<{name: string}>('ide-haskell-cabal', 'builder')
         if (ob) {
-          debuggerInst = new Debugger(breakpointUI.breakpoints, ob.name)
+          debuggerInst = new Debugger(breakpointUI.breakpoints, currentTarget.getModel(), ob.name)
         } else {
-          debuggerInst = new Debugger(breakpointUI.breakpoints)
+          debuggerInst = new Debugger(breakpointUI.breakpoints, currentTarget.getModel())
         }
     },
     'debug-back': () => {
@@ -54,12 +55,10 @@ export let commands = {
             debuggerInst.continue()
         }
     },
-    'toggle-breakpoint': () => {
-        const te = atom.workspace.getActiveTextEditor()
-
+    'toggle-breakpoint': ({currentTarget}: EditorEvent) => {
         breakpointUI.toggleBreakpoint(
-            te.getCursorBufferPosition().row + 1,
-            te
+            currentTarget.getModel().getCursorBufferPosition().row + 1,
+            currentTarget.getModel()
         )
     },
     'set-break-on-exception': async () => {
