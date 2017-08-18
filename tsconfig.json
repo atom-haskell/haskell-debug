@@ -30,5 +30,6 @@
     ],
     "exclude": [
         "typings/etch.d.ts"
-    ]
+    ],
+    "compileOnSave": true
 }
