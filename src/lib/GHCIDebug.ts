@@ -223,9 +223,11 @@ export class GHCIDebug {
 
         const matchResult = historyQuery.match(regex)
         if (! matchResult) {
-            return 0
-        } else if (historyQuery.slice(-3) === '...') {
+          if (historyQuery.slice(-3) === '...') {
             return Infinity // history is very long
+          } else {
+            return 0
+          }
         } else {
             return parseInt(matchResult[1], 10)
         }
