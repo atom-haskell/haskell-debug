@@ -1,3 +1,7 @@
+## 0.3.2
+* Fix for trace history longer than 100
+* Typed emitter
+
 ## 0.3.1
 * Avoid using getActiveTextEditor, since it's unreliable
 * bump submodules
