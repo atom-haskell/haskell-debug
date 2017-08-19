@@ -6,7 +6,7 @@ export const debugModes = [
   { value: 'exceptions', description: 'Pause on exceptions' },
 ]
 
-function getTerminalCommand () {
+function getTerminalCommand() {
   if (os.type() === 'Windows_NT') {
     return 'start %s'
   } else if (os.type() === 'Linux') {

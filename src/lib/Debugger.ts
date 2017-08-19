@@ -11,231 +11,234 @@ import ExceptionInfo = _GHCIDebug.ExceptionInfo
 import path = require('path')
 
 class Debugger {
-    private lineHighlighter = new LineHighlighter()
-    private ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.getWorkingFolder())
-    private debugView = new DebugView()
-    private historyState = new HistoryState()
-    // tslint:disable-next-line: no-uninitialized-class-properties
-    private debugPanel: atomAPI.Panel
-    private currentVariablesView = new CurrentVariablesView()
-    // tslint:disable-next-line: no-uninitialized-class-properties
-    private currentVariablesPanel: atomAPI.Panel
-    private terminalReporter = new TerminalReporter()
-    private disposables = new atomAPI.CompositeDisposable()
+  private lineHighlighter = new LineHighlighter()
+  private ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.getWorkingFolder())
+  private debugView = new DebugView()
+  private historyState = new HistoryState()
+  // tslint:disable-next-line: no-uninitialized-class-properties
+  private debugPanel: atomAPI.Panel
+  private currentVariablesView = new CurrentVariablesView()
+  // tslint:disable-next-line: no-uninitialized-class-properties
+  private currentVariablesPanel: atomAPI.Panel
+  private terminalReporter = new TerminalReporter()
+  private disposables = new atomAPI.CompositeDisposable()
 
-    private getGhciCommand () {
-        if (atom.config.get('haskell-debug.useIdeHaskellCabalBuilder')) {
-            switch (this.ideCabalBuilderCommand) {
-                case 'cabal':
-                    return 'cabal'
-                case 'stack':
-                    return 'stack'
-                default:
-                    return atom.config.get('haskell-debug.GHCICommand')
-            }
-        }
-        return atom.config.get('haskell-debug.GHCICommand')
+  private getGhciCommand() {
+    if (atom.config.get('haskell-debug.useIdeHaskellCabalBuilder')) {
+      switch (this.ideCabalBuilderCommand) {
+        case 'cabal':
+          return 'cabal'
+        case 'stack':
+          return 'stack'
+        default:
+          return atom.config.get('haskell-debug.GHCICommand')
+      }
+    }
+    return atom.config.get('haskell-debug.GHCICommand')
+  }
+
+  private getGhciArgs() {
+    const args: string[] = []
+    const ghciArgs = atom.config.get('haskell-debug.GHCIArguments')
+
+    if (atom.config.get('haskell-debug.useIdeHaskellCabalBuilder')) {
+      switch (this.ideCabalBuilderCommand) {
+        case 'cabal':
+          args.push('repl')
+          break
+        case 'stack':
+          args.push('ghci')
+          break
+      }
     }
 
-    private getGhciArgs () {
-        const args: string[] = []
-        const ghciArgs = atom.config.get('haskell-debug.GHCIArguments')
+    if (ghciArgs.length > 0
+      && (this.ideCabalBuilderCommand === 'cabal'
+        || this.ideCabalBuilderCommand === 'stack')) {
+      return args.concat(`--ghc-options="${atom.config.get('haskell-debug.GHCIArguments')}"`)
+    } else {
+      return args.concat(atom.config.get('haskell-debug.GHCIArguments').split(' '))
+    }
+  }
 
-        if (atom.config.get('haskell-debug.useIdeHaskellCabalBuilder')) {
-            switch (this.ideCabalBuilderCommand) {
-                case 'cabal':
-                    args.push('repl')
-                    break
-                case 'stack':
-                    args.push('ghci')
-                    break
-            }
-        }
+  private destroy() {
+    this.lineHighlighter.destroy()
+    this.ghciDebug.destroy()
+    this.debugView.destroy()
+    this.debugPanel.destroy()
+    this.currentVariablesPanel.destroy()
+    this.currentVariablesView.destroy()
+    this.terminalReporter.destroy()
+    this.disposables.dispose()
+  }
 
-        if (ghciArgs.length > 0
-            && (this.ideCabalBuilderCommand === 'cabal'
-            ||  this.ideCabalBuilderCommand === 'stack')) {
-            return args.concat(`--ghc-options="${atom.config.get('haskell-debug.GHCIArguments')}"`)
-        } else {
-            return args.concat(atom.config.get('haskell-debug.GHCIArguments').split(' '))
-        }
+  hidePanels() {
+    this.debugPanel.hide()
+    this.currentVariablesPanel.hide()
+  }
+
+  showPanels() {
+    this.debugPanel.show()
+    this.currentVariablesPanel.show()
+  }
+
+  private displayGUI() {
+    this.debugView = new DebugView()
+    this.debugPanel = atom.workspace.addTopPanel({
+      item: this.debugView.element
+    })
+
+    this.debugView.emitter.on('step', () => this.step())
+    this.debugView.emitter.on('back', () => this.back())
+    this.debugView.emitter.on('forward', () => this.forward())
+    this.debugView.emitter.on('continue', () => this.continue())
+    this.debugView.emitter.on('stop', () => this.stop())
+
+    this.currentVariablesView = new CurrentVariablesView()
+    this.currentVariablesPanel = atom.workspace.addTopPanel({
+      item: this.currentVariablesView.element
+    })
+  }
+
+  private debuggerEnabled = false
+
+  private updateHistoryLengthAndEnableButtons(historyLength?: number) {
+    if (historyLength !== undefined) {
+      this.historyState.setMaxPosition(historyLength)
     }
 
-    private destroy () {
-        this.lineHighlighter.destroy()
-        this.ghciDebug.destroy()
-        this.debugView.destroy()
-        this.debugPanel.destroy()
-        this.currentVariablesPanel.destroy()
-        this.currentVariablesView.destroy()
-        this.terminalReporter.destroy()
-        this.disposables.dispose()
-    }
+    this.debugView.enableAllDebugButtons()
+    this.debugView.buttons.back.isEnabled = this.historyState.backEnabled
+    this.debugView.buttons.forward.isEnabled = this.historyState.forwardEnabled
+    this.debuggerEnabled = true
+  }
 
-    hidePanels () {
-        this.debugPanel.hide()
-        this.currentVariablesPanel.hide()
-    }
+  private executingCommandFromConsole = false
+  private launchGHCIDebugAndConsole(breakpoints: Breakpoint[]) {
+    this.ghciDebug.emitter.on('line-changed', (info: BreakInfo) => {
+      this.lineHighlighter.hightlightLine(info)
+      this.updateHistoryLengthAndEnableButtons(info.historyLength)
+      this.currentVariablesView.update(info.localBindings, false)
+    })
 
-    showPanels () {
-        this.debugPanel.show()
-        this.currentVariablesPanel.show()
-    }
+    this.ghciDebug.emitter.on('paused-on-exception', (info: ExceptionInfo) => {
+      this.lineHighlighter.destroy()
+      this.updateHistoryLengthAndEnableButtons(info.historyLength)
+      this.currentVariablesView.update(info.localBindings, true)
+    })
 
-    private displayGUI () {
-        this.debugView = new DebugView()
-        this.debugPanel = atom.workspace.addTopPanel({
-            item: this.debugView.element
+    this.ghciDebug.emitter.on('debug-finished', () => {
+      this.destroy()
+    })
+
+    this.ghciDebug.emitter.on('command-issued', (command: string) => {
+      if (!this.executingCommandFromConsole) {
+        this.terminalReporter.displayCommand(command)
+      }
+
+      this.debuggerEnabled = false
+      setTimeout(
+        () => {
+          if (!this.debuggerEnabled) {
+            this.debugView.disableAllDebugButtons()
+          }
+        },
+        100
+      )
+    })
+
+    this.ghciDebug.emitter.on('console-output', (output: string) => {
+      this.terminalReporter.write(output)
+    })
+
+    this.ghciDebug.emitter.on('error-completed', (errorText: string) => {
+      if (!this.executingCommandFromConsole) {
+        atom.notifications.addError('GHCI Error', {
+          detail: errorText,
+          dismissable: true
         })
+      }
+    })
 
-        this.debugView.emitter.on('step', () => this.step())
-        this.debugView.emitter.on('back', () => this.back())
-        this.debugView.emitter.on('forward', () => this.forward())
-        this.debugView.emitter.on('continue', () => this.continue())
-        this.debugView.emitter.on('stop', () => this.stop())
+    this.ghciDebug.emitter.on('error', (errorText: string) => {
+      this.terminalReporter.write(errorText)
+    })
 
-        this.currentVariablesView = new CurrentVariablesView()
-        this.currentVariablesPanel = atom.workspace.addTopPanel({
-            item: this.currentVariablesView.element
-        })
+    this.ghciDebug.addedAllListeners()
+
+    this.terminalReporter.emitter.on('command', async (command: string) => {
+      this.executingCommandFromConsole = true
+      await this.ghciDebug.run(command, true, true)
+      this.executingCommandFromConsole = false
+    })
+
+    this.terminalReporter.emitter.on('close', () => {
+      this.ghciDebug.stop()
+    })
+
+    this.ghciDebug.setExceptionBreakLevel(atom.config.get('haskell-debug.breakOnException'))
+
+    this.debugView.disableAllDebugButtons()
+
+    const fileToDebug = this.editor.getPath()
+    this.ghciDebug.loadModule(fileToDebug)
+
+    breakpoints.forEach((ob) => {
+      if (ob.file === fileToDebug) {
+        this.ghciDebug.addBreakpoint(ob.line.toString())
+      } else {
+        this.ghciDebug.addBreakpoint(ob) // TODO: make this work properly
+      }
+    })
+
+    this.ghciDebug.startDebug(atom.config.get('haskell-debug.functionToDebug'))
+  }
+
+  constructor(
+    breakpoints: Breakpoint[],
+    private editor: atomAPI.TextEditor,
+    private ideCabalBuilderCommand?: string
+  ) {
+    this.launchGHCIDebugAndConsole(breakpoints)
+    this.displayGUI()
+    this.disposables.add(atom.config.onDidChange('haskell-debug.breakOnException', ({ newValue }) => {
+      this.ghciDebug.setExceptionBreakLevel(newValue as ExceptionBreakLevels)
+    }))
+  }
+
+  /** For the tooltip override*/
+  async resolveExpression(expression: string) {
+    return this.ghciDebug.resolveExpression(expression)
+  }
+
+  back() {
+    if (this.historyState.setCurrentPosition(this.historyState.getCurrentPosition() + 1)) {
+      this.ghciDebug.back()
     }
+  }
 
-    private debuggerEnabled = false
-
-    private updateHistoryLengthAndEnableButtons (historyLength?: number) {
-        if (historyLength !== undefined) {
-            this.historyState.setMaxPosition(historyLength)
-        }
-
-        this.debugView.enableAllDebugButtons()
-        this.debugView.buttons.back.isEnabled = this.historyState.backEnabled
-        this.debugView.buttons.forward.isEnabled = this.historyState.forwardEnabled
-        this.debuggerEnabled = true
+  forward() {
+    if (this.historyState.setCurrentPosition(this.historyState.getCurrentPosition() - 1)) {
+      this.ghciDebug.forward()
     }
+  }
 
-    private executingCommandFromConsole = false
-    private launchGHCIDebugAndConsole (breakpoints: Breakpoint[]) {
-        this.ghciDebug.emitter.on('line-changed', (info: BreakInfo) => {
-            this.lineHighlighter.hightlightLine(info)
-            this.updateHistoryLengthAndEnableButtons(info.historyLength)
-            this.currentVariablesView.update(info.localBindings, false)
-        })
+  continue() {
+    this.ghciDebug.continue()
+  }
 
-        this.ghciDebug.emitter.on('paused-on-exception', (info: ExceptionInfo) => {
-            this.lineHighlighter.destroy()
-            this.updateHistoryLengthAndEnableButtons(info.historyLength)
-            this.currentVariablesView.update(info.localBindings, true)
-        })
+  step() {
+    this.ghciDebug.step()
+  }
 
-        this.ghciDebug.emitter.on('debug-finished', () => {
-            this.destroy()
-        })
+  stop() {
+    this.ghciDebug.stop() // this will trigger debug-finished event
+  }
 
-        this.ghciDebug.emitter.on('command-issued', (command: string) => {
-            if (!this.executingCommandFromConsole) {
-              this.terminalReporter.displayCommand(command)
-            }
-
-            this.debuggerEnabled = false
-            setTimeout(() => {
-                if (!this.debuggerEnabled) {
-                    this.debugView.disableAllDebugButtons()
-                }
-            },         100)
-        })
-
-        this.ghciDebug.emitter.on('console-output', (output: string) => {
-            this.terminalReporter.write(output)
-        })
-
-        this.ghciDebug.emitter.on('error-completed', (errorText: string) => {
-            if (!this.executingCommandFromConsole) {
-                atom.notifications.addError('GHCI Error', {
-                    detail: errorText,
-                    dismissable: true
-                })
-            }
-        })
-
-        this.ghciDebug.emitter.on('error', (errorText: string) => {
-            this.terminalReporter.write(errorText)
-        })
-
-        this.ghciDebug.addedAllListeners()
-
-        this.terminalReporter.emitter.on('command', async (command: string) => {
-            this.executingCommandFromConsole = true
-            await this.ghciDebug.run(command, true, true)
-            this.executingCommandFromConsole = false
-        })
-
-        this.terminalReporter.emitter.on('close', () => {
-            this.ghciDebug.stop()
-        })
-
-        this.ghciDebug.setExceptionBreakLevel(atom.config.get('haskell-debug.breakOnException'))
-
-        this.debugView.disableAllDebugButtons()
-
-        const fileToDebug = this.editor.getPath()
-        this.ghciDebug.loadModule(fileToDebug)
-
-        breakpoints.forEach((ob) => {
-            if (ob.file === fileToDebug) {
-                this.ghciDebug.addBreakpoint(ob.line.toString())
-            } else {
-                this.ghciDebug.addBreakpoint(ob) // TODO: make this work properly
-            }
-        })
-
-        this.ghciDebug.startDebug(atom.config.get('haskell-debug.functionToDebug'))
-    }
-
-    constructor (
-      breakpoints: Breakpoint[],
-      private editor: atomAPI.TextEditor,
-      private ideCabalBuilderCommand?: string
-    ) {
-        this.launchGHCIDebugAndConsole(breakpoints)
-        this.displayGUI()
-        this.disposables.add(atom.config.onDidChange('haskell-debug.breakOnException', ({newValue}) => {
-            this.ghciDebug.setExceptionBreakLevel(newValue as ExceptionBreakLevels)
-        }))
-    }
-
-    /** For the tooltip override*/
-    async resolveExpression (expression: string) {
-        return this.ghciDebug.resolveExpression(expression)
-    }
-
-    back () {
-        if (this.historyState.setCurrentPosition(this.historyState.getCurrentPosition() + 1)) {
-            this.ghciDebug.back()
-        }
-    }
-
-    forward () {
-        if (this.historyState.setCurrentPosition(this.historyState.getCurrentPosition() - 1)) {
-            this.ghciDebug.forward()
-        }
-    }
-
-    continue () {
-        this.ghciDebug.continue()
-    }
-
-    step () {
-        this.ghciDebug.step()
-    }
-
-    stop () {
-        this.ghciDebug.stop() // this will trigger debug-finished event
-    }
-
-    private getWorkingFolder () {
-        const fileToDebug = this.editor.getPath()
-        return path.dirname(fileToDebug)
-    }
+  private getWorkingFolder() {
+    const fileToDebug = this.editor.getPath()
+    return path.dirname(fileToDebug)
+  }
 }
 
 export = Debugger
