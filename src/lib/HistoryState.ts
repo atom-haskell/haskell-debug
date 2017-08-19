@@ -1,8 +1,17 @@
 
 class HistoryState {
   private _maxPosition = 0
-  backEnabled = true
-  forwardEnabled = true
+  private _backEnabled = true
+  private _forwardEnabled = true
+  private _currentPosition = 0
+
+  public get backEnabled() {
+    return this._backEnabled
+  }
+
+  public get forwardEnabled() {
+    return this._forwardEnabled
+  }
 
   public setMaxPosition(newLength: number) {
     this._maxPosition = newLength
@@ -13,7 +22,6 @@ class HistoryState {
     return this._maxPosition
   }
 
-  private _currentPosition = 0
   /**
     * sets the current history position, returns false if newPosition is invalid
   */
@@ -31,8 +39,8 @@ class HistoryState {
   }
 
   private updateButtonsState() {
-    this.forwardEnabled = this._currentPosition !== 0
-    this.backEnabled = this._currentPosition !== this._maxPosition
+    this._forwardEnabled = this._currentPosition !== 0
+    this._backEnabled = this._currentPosition !== this._maxPosition
   }
 }
 

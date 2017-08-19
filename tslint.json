@@ -29,8 +29,6 @@
       "no-uninitialized-class-properties": true,
       "interface-name": false,
       "ban-types": [],
-      "no-string-literal": true,
-      "member-ordering": false,
-      "member-access": false
+      "no-string-literal": true
     }
 }

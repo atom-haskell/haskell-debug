@@ -24,51 +24,33 @@ interface Command {
 }
 
 export class GHCIDebug {
-  private ghciCmd: cp.ChildProcess
-  stdout: stream.Readable
-  stdin: stream.Writable
-  stderr: stream.Readable
+  private static pausedOnError = Symbol('Paused on Error')
+  private static finishedDebugging = Symbol('Finished debugging')
 
-  /** Event Handler
-    *
-    * Events:
-    *
-    * ready: ()
-    *     Emmited when ghci has just stopped executing a command
-    *
-    * paused-on-exception: (info: ExceptionInfo)
-    *     Emmited when the debugger is at an exception
-    *
-    * error: (text: string)
-    *     Emmited when stderr has input
-    *
-    * error-completed: (text: string)
-    *     Emmited when ghci reports an error for a given command
-    *
-    * line-changed: (info: BreakInfo)
-    *     Emmited when the line that the debugger is on changes
-    *
-    * debug-finished: (void)
-    *     Emmited when the debugger has reached the end of the program
-    *
-    * console-output: (output: string)
-    *     Emmited when the ghci has outputed something to stdout, excluding the extra prompt
-    *
-    * command-issued: (command: string)
-    *     Emmited when a command has been executed
-    */
-  public emitter: atomAPI.TEmitter<{
-    'paused-on-exception': ExceptionInfo
-    'ready': ExceptionInfo | undefined
-    'error': string
-    'error-completed': string
-    'line-changed': BreakInfo
-    'debug-finished': undefined
-    'console-output': string
-    'command-issued': string
+  private emitter: atomAPI.TEmitter<{
+    'paused-on-exception': ExceptionInfo /// Emmited when the debugger is at an exception
+    'ready': ExceptionInfo | undefined /// Emmited when ghci has just stopped executing a command
+    'error': string /// Emmited when stderr has input
+    'error-completed': string /// Emmited when ghci reports an error for a given command
+    'line-changed': BreakInfo /// Emmited when the line that the debugger is on changes
+    'debug-finished': undefined /// Emmited when the debugger has reached the end of the program
+    'console-output': string /// Emmited when the ghci has outputed something to stdout, excluding the extra prompt
+    'command-issued': string /// Emmited when a command has been executed
   }> = new atomAPI.Emitter()
+  // tslint:disable-next-line: member-ordering
+  public readonly on = this.emitter.on.bind(this.emitter)
 
+  private ghciCmd: cp.ChildProcess
+  private stdout: stream.Readable
+  private stdin: stream.Writable
+  private stderr: stream.Readable
   private startText: Promise<string>
+  private ignoreErrors = false
+  private currentStderrOutput = ''
+  private currentCommandBuffer = ''
+  private commands = [] as Command[]
+  private currentCommand?: Command
+  private commandFinishedString = 'command_finish_o4uB1whagteqE8xBq9oq'
 
   constructor(ghciCommand = 'ghci', ghciArgs: string[] = [], folder?: string) {
 
@@ -87,18 +69,6 @@ export class GHCIDebug {
     this.addReadyEvent()
 
     this.startText = this.run(`:set prompt "%s> ${this.commandFinishedString}"`, false, false, false, true)
-  }
-
-  private addReadyEvent() {
-    const eventSubs = [
-      'paused-on-exception',
-      'line-changed',
-      'debug-finished',
-    ]
-
-    for (const eventName of eventSubs) {
-      (this.emitter.on as any)(eventName, () => this.emitter.emit('ready', undefined))
-    }
   }
 
   public destroy() {
@@ -207,139 +177,9 @@ export class GHCIDebug {
     })
   }
 
-  async startDebug(moduleName?: string) {
+  public async startDebug(moduleName?: string) {
     moduleName = moduleName || 'main'
     await this.run(':trace ' + moduleName, true, true)
-  }
-
-  async getBindings() {
-    const outputStr = await this.run(':show bindings', false, false, false)
-    return outputStr.split(os.EOL)
-  }
-
-  private async getHistoryLength() {
-    const historyQuery = await this.run(':history 100', false, false, false)
-    const regex = /-(\d*).*(?:\n|\r|\r\n)<end of history>$/
-
-    const matchResult = historyQuery.match(regex)
-    if (!matchResult) {
-      if (historyQuery.slice(-3) === '...') {
-        return Infinity // history is very long
-      } else {
-        return 0
-      }
-    } else {
-      return parseInt(matchResult[1], 10)
-    }
-  }
-
-  static pausedOnError = Symbol('Paused on Error')
-  static finishedDebugging = Symbol('Finished debugging')
-
-  private parsePrompt(stdOutput: string): BreakInfo | Symbol {
-    const patterns = [{
-      pattern: /\[(?:[-\d]*: )?(.*):\((\d+),(\d+)\)-\((\d+),(\d+)\).*\].*> $/,
-      func: (match) => ({
-        filename: match[1],
-        range: [[parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
-        [parseInt(match[4], 10), parseInt(match[5], 10)]]
-      })
-    }, {
-      pattern: /\[(?:[-\d]*: )?(.*):(\d*):(\d*)-(\d*)\].*> $/,
-      func: (match) => ({
-        filename: match[1],
-        range: [[parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
-        [parseInt(match[2], 10) - 1, parseInt(match[4], 10)]]
-      })
-    }, {
-      pattern: /\[<exception thrown>\].*> $/,
-      func: () => GHCIDebug.pausedOnError
-    }, {
-      pattern: /.*> $/,
-      func: () => GHCIDebug.finishedDebugging
-    }] as Array<{ pattern: RegExp; func: (match: string[]) => BreakInfo | Symbol }>
-    for (const pattern of patterns) {
-      const matchResult = stdOutput.match(pattern.pattern)
-      if (matchResult) {
-        return pattern.func(matchResult)
-      }
-    }
-    throw new Error('Cannot read prompt: \n' + stdOutput)
-  }
-
-  private async emitStatusChanges(prompt: string, mainBody: string, emitHistoryLength: boolean) {
-    const result = this.parsePrompt(prompt)
-
-    if (result === GHCIDebug.pausedOnError) {
-      const historyLength = await this.getHistoryLength()
-
-      this.emitter.emit('paused-on-exception', {
-        historyLength,
-        localBindings: mainBody.split('\n').slice(1)
-      })
-    } else if (result === GHCIDebug.finishedDebugging) {
-      this.emitter.emit('debug-finished', undefined)
-    } else {
-      const breakInfo = result as BreakInfo
-
-      breakInfo.localBindings = await this.getBindings()
-
-      if (emitHistoryLength) {
-        breakInfo.historyLength = await this.getHistoryLength()
-      }
-
-      this.emitter.emit('line-changed', breakInfo)
-    }
-  }
-
-  private ignoreErrors = false
-  private currentStderrOutput = ''
-  private onStderrReadable() {
-    const stderrOutput: Buffer = this.stderr.read()
-    if (!stderrOutput || this.ignoreErrors) {
-      return // this is the end of the input stream
-    }
-
-    this.emitter.emit('error', stderrOutput.toString())
-
-    if (this.currentStderrOutput === '') {
-      const disp = this.emitter.on('ready', () => {
-        this.emitter.emit('error-completed', this.currentStderrOutput)
-        this.currentStderrOutput = ''
-        disp.dispose()
-      })
-    }
-
-    this.currentStderrOutput += stderrOutput.toString()
-  }
-
-  private currentCommandBuffer = ''
-  private commands = [] as Command[]
-  private currentCommand?: Command
-  private commandFinishedString = 'command_finish_o4uB1whagteqE8xBq9oq'
-
-  private onStdoutReadable() {
-    const currentString = (this.stdout.read() || '').toString()
-
-    this.currentCommandBuffer += currentString
-
-    const finishStringPosition = this.currentCommandBuffer.search(this.commandFinishedString)
-    if (finishStringPosition !== -1) {
-      const outputString = this.currentCommandBuffer.slice(0, finishStringPosition)
-
-      if (this.currentCommand) {
-        if (this.currentCommand.emitCommandOutput) {
-          this.emitter.emit('console-output', outputString)
-        }
-
-        this.currentCommand.onFinish(outputString)
-      }
-
-      // Take the finished string off the buffer and process the next ouput
-      this.currentCommandBuffer = this.currentCommandBuffer.slice(
-        finishStringPosition + this.commandFinishedString.length)
-      this.onStdoutReadable()
-    }
   }
 
   public async run(
@@ -421,5 +261,137 @@ export class GHCIDebug {
         shiftAndRunCommand()
       }
     })
+  }
+
+  private addReadyEvent() {
+    const eventSubs = [
+      'paused-on-exception',
+      'line-changed',
+      'debug-finished',
+    ]
+
+    for (const eventName of eventSubs) {
+      (this.emitter.on as any)(eventName, () => this.emitter.emit('ready', undefined))
+    }
+  }
+
+  private async getBindings() {
+    const outputStr = await this.run(':show bindings', false, false, false)
+    return outputStr.split(os.EOL)
+  }
+
+  private async getHistoryLength() {
+    const historyQuery = await this.run(':history 100', false, false, false)
+    const regex = /-(\d*).*(?:\n|\r|\r\n)<end of history>$/
+
+    const matchResult = historyQuery.match(regex)
+    if (!matchResult) {
+      if (historyQuery.slice(-3) === '...') {
+        return Infinity // history is very long
+      } else {
+        return 0
+      }
+    } else {
+      return parseInt(matchResult[1], 10)
+    }
+  }
+
+  private parsePrompt(stdOutput: string): BreakInfo | Symbol {
+    const patterns = [{
+      pattern: /\[(?:[-\d]*: )?(.*):\((\d+),(\d+)\)-\((\d+),(\d+)\).*\].*> $/,
+      func: (match) => ({
+        filename: match[1],
+        range: [[parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
+        [parseInt(match[4], 10), parseInt(match[5], 10)]]
+      })
+    }, {
+      pattern: /\[(?:[-\d]*: )?(.*):(\d*):(\d*)-(\d*)\].*> $/,
+      func: (match) => ({
+        filename: match[1],
+        range: [[parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
+        [parseInt(match[2], 10) - 1, parseInt(match[4], 10)]]
+      })
+    }, {
+      pattern: /\[<exception thrown>\].*> $/,
+      func: () => GHCIDebug.pausedOnError
+    }, {
+      pattern: /.*> $/,
+      func: () => GHCIDebug.finishedDebugging
+    }] as Array<{ pattern: RegExp; func: (match: string[]) => BreakInfo | Symbol }>
+    for (const pattern of patterns) {
+      const matchResult = stdOutput.match(pattern.pattern)
+      if (matchResult) {
+        return pattern.func(matchResult)
+      }
+    }
+    throw new Error('Cannot read prompt: \n' + stdOutput)
+  }
+
+  private async emitStatusChanges(prompt: string, mainBody: string, emitHistoryLength: boolean) {
+    const result = this.parsePrompt(prompt)
+
+    if (result === GHCIDebug.pausedOnError) {
+      const historyLength = await this.getHistoryLength()
+
+      this.emitter.emit('paused-on-exception', {
+        historyLength,
+        localBindings: mainBody.split('\n').slice(1)
+      })
+    } else if (result === GHCIDebug.finishedDebugging) {
+      this.emitter.emit('debug-finished', undefined)
+    } else {
+      const breakInfo = result as BreakInfo
+
+      breakInfo.localBindings = await this.getBindings()
+
+      if (emitHistoryLength) {
+        breakInfo.historyLength = await this.getHistoryLength()
+      }
+
+      this.emitter.emit('line-changed', breakInfo)
+    }
+  }
+
+  private onStderrReadable() {
+    const stderrOutput: Buffer = this.stderr.read()
+    if (!stderrOutput || this.ignoreErrors) {
+      return // this is the end of the input stream
+    }
+
+    this.emitter.emit('error', stderrOutput.toString())
+
+    if (this.currentStderrOutput === '') {
+      const disp = this.emitter.on('ready', () => {
+        this.emitter.emit('error-completed', this.currentStderrOutput)
+        this.currentStderrOutput = ''
+        disp.dispose()
+      })
+    }
+
+    this.currentStderrOutput += stderrOutput.toString()
+  }
+
+  private onStdoutReadable() {
+    const currentString = (this.stdout.read() || '').toString()
+
+    this.currentCommandBuffer += currentString
+
+    const finishStringPosition = this.currentCommandBuffer.search(this.commandFinishedString)
+    if (finishStringPosition !== -1) {
+      const outputString = this.currentCommandBuffer.slice(0, finishStringPosition)
+
+      if (this.currentCommand) {
+        if (this.currentCommand.emitCommandOutput) {
+          this.emitter.emit('console-output', outputString)
+        }
+
+        this.currentCommand.onFinish(outputString)
+      }
+
+      // Take the finished string off the buffer and process the next ouput
+      this.currentCommandBuffer = this.currentCommandBuffer.slice(
+        finishStringPosition + this.commandFinishedString.length)
+      this.onStdoutReadable()
+    }
   }
 }

@@ -1,5 +1,8 @@
 class TooltipOverride {
-  async tooltipHandler(editor: AtomTypes.TextEditor, crange: AtomTypes.Range, type: UPI.TEventRangeType)
+  constructor(private resolveExpression: (expression: string) => Promise<string | undefined>) {
+  }
+
+  public async tooltipHandler(editor: AtomTypes.TextEditor, crange: AtomTypes.Range, type: UPI.TEventRangeType)
     : Promise<UPI.ITooltipData | undefined> {
     let range: AtomTypes.Range | undefined = crange
     if (range.isEmpty()) {
@@ -13,9 +16,6 @@ class TooltipOverride {
       return { range, text: debugValue }
     }
     return
-  }
-
-  constructor(private resolveExpression: (expression: string) => Promise<string | undefined>) {
   }
 }
 
