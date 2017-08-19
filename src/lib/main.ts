@@ -5,21 +5,19 @@ import atomAPI = require('atom')
 import os = require('os')
 import path = require('path')
 import cp = require('child_process')
+import {debugModes} from './config'
+export {config} from './config'
 
-export let breakpointUI = new BreakpointUI()
-export let debuggerInst: Debugger | undefined
-export let tooltipOverride = new TooltipOverride(async (expression) => {
-    if (debuggerInst === undefined) { return }
-    return debuggerInst.resolveExpression(expression)
-})
+const breakpointUI = new BreakpointUI()
 
-export let settings = {
-    breakOnError: true
-}
+let debuggerInst: Debugger | undefined
+let upi: UPI.IUPIInstance | undefined
+let state: HaskellDebugState | undefined
+let disposables: atomAPI.CompositeDisposable | undefined
 
-export let commands = {
+const commands = {
     'debug': async ({currentTarget}: atomAPI.IEventDesc) => {
-        const ob = await upi.getOthersConfigParam<{name: string}>('ide-haskell-cabal', 'builder')
+        const ob = upi && await upi.getOthersConfigParam<{name: string}>('ide-haskell-cabal', 'builder')
         if (ob) {
           debuggerInst = new Debugger(breakpointUI.breakpoints, currentTarget.getModel(), ob.name)
         } else {
@@ -64,7 +62,7 @@ export let commands = {
     }
 }
 
-export function onFirstRun () {
+function onFirstRun () {
     state = {
         properlyActivated: false
     }
@@ -84,141 +82,62 @@ export function onFirstRun () {
     })
 }
 
+function activePaneObserver (pane: atomAPI.Pane) {
+    if (atom.workspace.isTextEditor(pane)) {
+        const te: atomAPI.TextEditor & { hasHaskellBreakpoints?: boolean } = pane
+        const scopes = te.getRootScopeDescriptor().getScopesArray()
+        if (scopes.length === 1 && scopes[0] === 'source.haskell') {
+            if (!te.hasHaskellBreakpoints) {
+                breakpointUI.attachToNewTextEditor(te)
+                te.hasHaskellBreakpoints = true
+            }
+            if (debuggerInst) {
+                debuggerInst.showPanels()
+            }
+            return  // don't do below
+        }
+    }
+    // if any pane that isn't a haskell source file and we're debugging
+    if (debuggerInst) {
+        debuggerInst.hidePanels()
+    }
+}
+
 interface HaskellDebugState {
     properlyActivated: boolean
 }
 
-export let state: HaskellDebugState | undefined
-
 export function activate (_state?: HaskellDebugState) {
+    disposables = new atomAPI.CompositeDisposable()
     state = _state
 
     if (state === undefined || state.properlyActivated !== true) {
         onFirstRun()
     }
-    atom.workspace.observeActivePaneItem((pane) => {
-        if (atom.workspace.isTextEditor(pane)) {
-            const te: atomAPI.TextEditor & { hasHaskellBreakpoints?: boolean } = pane
-            const scopes = te.getRootScopeDescriptor().getScopesArray()
-            if (scopes.length === 1 && scopes[0] === 'source.haskell') {
-                if (!te.hasHaskellBreakpoints) {
-                    breakpointUI.attachToNewTextEditor(te)
-                    te.hasHaskellBreakpoints = true
-                }
+    disposables.add(atom.workspace.observeActivePaneItem(activePaneObserver))
 
-                if (debuggerInst) {
-                    debuggerInst.showPanels()
-                }
-
-                return  // don't do below
-            }
-        }
-
-        // if any pane that isn't a haskell source file and we're debugging
-        if (debuggerInst) {
-            debuggerInst.hidePanels()
-        }
-    })
-
-    for (const command of Object.keys(commands)){
+    for (const command of Object.keys(commands)) {
+      disposables.add(
         atom.commands.add("atom-text-editor[data-grammar='source haskell']",
                           'haskell:' + command,
                           commands[command])
+      )
     }
+}
+
+export function deactivate () {
+    disposables && disposables.dispose()
 }
 
 export function serialize () {
     return state
 }
 
-export let debugModes = [
-    {value: 'none', description: 'Don\'t pause on any exceptions'},
-    {value: 'errors', description: 'Pause on errors (uncaught exceptions)'},
-    {value: 'exceptions', description: 'Pause on exceptions'},
-]
-
-export function getTerminalCommand () {
-    if (os.type() === 'Windows_NT') {
-        return 'start %s'
-    } else if (os.type() === 'Linux') {
-        return `x-terminal-emulator -e "bash -c \\"%s\\""`
-    } else if (os.type() === 'Darwin') {
-        return `osascript -e 'tell app "Terminal" to do script "%s"'`
-    } else {
-        // not recognised, hope xterm works
-        return `xterm -e "bash -c \\"%s\\""`
-    }
-}
-
-export let config = {
-    useIdeHaskellCabalBuilder: {
-        title: 'Use ide-haskell-cabal builder',
-        description: "Use the ide-haskell-cabal builder's command when running ghci - " +
-            'will run `stack ghci` when stack is the builder, `cabal repl` for cabal and ' +
-            '`ghci` for none',
-        default: true,
-        type: 'boolean',
-        order: 0
-    },
-    GHCICommand: {
-        title: 'GHCI Command',
-        description: 'The command to run to execute `ghci`, this will get ignore if the' +
-            ' previous setting is set to true',
-        type: 'string',
-        default: 'ghci',
-        order: 1
-    },
-    GHCIArguments: {
-        title: 'GHCI Arguments',
-        description: 'Arguments to give to `ghci`, separated by a space',
-        type: 'string',
-        default: '',
-        order: 2
-    },
-    nodeCommand: {
-        description: 'The command to run to execute node.js',
-        type: 'string',
-        default: 'node',
-        order: 3
-    },
-    terminalCommand: {
-        description: 'The command to run to launch a terminal, where the command launched in the terminal is `%s`.',
-        type: 'string',
-        default: getTerminalCommand(),
-        order: 4
-    },
-    clickGutterToToggleBreakpoint: {
-        type: 'boolean',
-        description: 'Insert a breakpoint when the gutter is clicked in a haskell source file',
-        default: true,
-        order: 5
-    },
-    showTerminal: {
-        type: 'boolean',
-        description: 'Show a terminal with `ghci` running when debugging',
-        default: true,
-        order: 6
-    },
-    functionToDebug: {
-        type: 'string',
-        description: 'The function to run when debugging',
-        default: 'main',
-        order: 7
-    },
-    breakOnException: {
-        description: `Whether to break on exceptions, errors or neither.
-            Note: breaking on exception may cause the debugger to freeze in some instances.
-            See [#3](https://github.com/ThomasHickman/haskell-debug/issues/3)`,
-        type: 'string',
-        default: 'none',
-        enum: debugModes,
-        order: 8
-    }
-}
-
-let upi: UPI.IUPIInstance
-
 export function consumeHaskellUpi (reg: UPI.IUPIRegistration) {
+    const tooltipOverride = new TooltipOverride(async (expression) => {
+        if (debuggerInst === undefined) { return }
+        return debuggerInst.resolveExpression(expression)
+    })
     upi = reg({
       name: 'haskell-debug',
       tooltip: {
