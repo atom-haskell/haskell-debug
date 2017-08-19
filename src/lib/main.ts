@@ -52,19 +52,19 @@ const commands = {
   'toggle-breakpoint': ({ currentTarget }: atomAPI.IEventDesc) => {
     breakpointUI.toggleBreakpoint(
       currentTarget.getModel().getCursorBufferPosition().row + 1,
-      currentTarget.getModel()
+      currentTarget.getModel(),
     )
   },
   'set-break-on-exception': async () => {
     const selectDebugModeView = require('./views/SelectDebugModeView')
     const result = await selectDebugModeView(debugModes, atom.config.get('haskell-debug.breakOnException'))
     if (result !== undefined) { atom.config.set('haskell-debug.breakOnException', result) }
-  }
+  },
 }
 
 function onFirstRun() {
   state = {
-    properlyActivated: false
+    properlyActivated: false,
   }
 
   // from http://stackoverflow.com/questions/34953168/node-check-existence-of-command-in-path
@@ -121,8 +121,8 @@ export function activate(_state?: HaskellDebugState) {
       atom.commands.add(
         "atom-text-editor[data-grammar='source haskell']",
         'haskell:' + command,
-        commands[command]
-      )
+        commands[command],
+      ),
     )
   }
 }
@@ -144,8 +144,8 @@ export function consumeHaskellUpi(reg: UPI.IUPIRegistration) {
     name: 'haskell-debug',
     tooltip: {
       priority: 100,
-      handler: tooltipOverride.tooltipHandler.bind(tooltipOverride)
-    }
+      handler: tooltipOverride.tooltipHandler.bind(tooltipOverride),
+    },
   })
   return upi
 }

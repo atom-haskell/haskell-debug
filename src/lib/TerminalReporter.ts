@@ -50,7 +50,7 @@ class TerminalReporter {
   public destroy() {
     if (this.process) {
       this.send({
-        type: 'close'
+        type: 'close',
       })
       this.process.kill()
     }
@@ -59,21 +59,21 @@ class TerminalReporter {
 
   public prompt() {
     this.send({
-      type: 'user-input'
+      type: 'user-input',
     })
   }
 
   public write(output: string) {
     this.send({
       type: 'message',
-      content: output
+      content: output,
     })
   }
 
   public displayCommand(command: string) {
     this.send({
       type: 'display-command',
-      command
+      command,
     })
   }
 

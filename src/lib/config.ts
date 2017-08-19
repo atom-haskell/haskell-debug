@@ -27,7 +27,7 @@ export const config = {
     '`ghci` for none',
     default: true,
     type: 'boolean',
-    order: 0
+    order: 0,
   },
   GHCICommand: {
     title: 'GHCI Command',
@@ -35,44 +35,44 @@ export const config = {
     ' previous setting is set to true',
     type: 'string',
     default: 'ghci',
-    order: 1
+    order: 1,
   },
   GHCIArguments: {
     title: 'GHCI Arguments',
     description: 'Arguments to give to `ghci`, separated by a space',
     type: 'string',
     default: '',
-    order: 2
+    order: 2,
   },
   nodeCommand: {
     description: 'The command to run to execute node.js',
     type: 'string',
     default: 'node',
-    order: 3
+    order: 3,
   },
   terminalCommand: {
     description: 'The command to run to launch a terminal, where the command launched in the terminal is `%s`.',
     type: 'string',
     default: getTerminalCommand(),
-    order: 4
+    order: 4,
   },
   clickGutterToToggleBreakpoint: {
     type: 'boolean',
     description: 'Insert a breakpoint when the gutter is clicked in a haskell source file',
     default: true,
-    order: 5
+    order: 5,
   },
   showTerminal: {
     type: 'boolean',
     description: 'Show a terminal with `ghci` running when debugging',
     default: true,
-    order: 6
+    order: 6,
   },
   functionToDebug: {
     type: 'string',
     description: 'The function to run when debugging',
     default: 'main',
-    order: 7
+    order: 7,
   },
   breakOnException: {
     description: `Whether to break on exceptions, errors or neither.
@@ -81,6 +81,6 @@ export const config = {
     type: 'string',
     default: 'none',
     enum: debugModes,
-    order: 8
-  }
+    order: 8,
+  },
 }

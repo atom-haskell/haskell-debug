@@ -86,10 +86,15 @@ export class GHCIDebug {
     this.run(':unset -fbreak-on-exception')
     this.run(':unset -fbreak-on-error')
 
-    if (level === 'exceptions') {
-      this.run(':set -fbreak-on-exception')
-    } else if (level === 'errors') {
-      this.run(':set -fbreak-on-error')
+    switch (level) {
+      case'exceptions':
+        this.run(':set -fbreak-on-exception')
+        break
+      case 'errors':
+        this.run(':set -fbreak-on-error')
+        break
+      case 'none': // no-op
+        break
     }
   }
 
@@ -187,7 +192,7 @@ export class GHCIDebug {
     emitStatusChanges: boolean = false,
     emitHistoryLength: boolean = false,
     emitCommandOutput: boolean = true,
-    fulfilWithPrompt: boolean = false
+    fulfilWithPrompt: boolean = false,
   ): Promise<string> {
     const shiftAndRunCommand = () => {
       const command = this.commands.shift()
@@ -238,7 +243,7 @@ export class GHCIDebug {
               this.emitStatusChanges(
                 output.slice(promptBeginPosition, output.length),
                 output.slice(0, lastEndOfLinePos),
-                emitHistoryLength
+                emitHistoryLength,
               ).then(() => {
                 _fulfil(output.slice(0, lastEndOfLinePos))
               })
@@ -252,7 +257,7 @@ export class GHCIDebug {
           if (this.commands.length !== 0) {
             shiftAndRunCommand()
           }
-        }
+        },
       }
 
       this.commands.push(command)
@@ -302,21 +307,21 @@ export class GHCIDebug {
       func: (match) => ({
         filename: match[1],
         range: [[parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
-        [parseInt(match[4], 10), parseInt(match[5], 10)]]
-      })
+        [parseInt(match[4], 10), parseInt(match[5], 10)]],
+      }),
     }, {
       pattern: /\[(?:[-\d]*: )?(.*):(\d*):(\d*)-(\d*)\].*> $/,
       func: (match) => ({
         filename: match[1],
         range: [[parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
-        [parseInt(match[2], 10) - 1, parseInt(match[4], 10)]]
-      })
+        [parseInt(match[2], 10) - 1, parseInt(match[4], 10)]],
+      }),
     }, {
       pattern: /\[<exception thrown>\].*> $/,
-      func: () => GHCIDebug.pausedOnError
+      func: () => GHCIDebug.pausedOnError,
     }, {
       pattern: /.*> $/,
-      func: () => GHCIDebug.finishedDebugging
+      func: () => GHCIDebug.finishedDebugging,
     }] as Array<{ pattern: RegExp; func: (match: string[]) => BreakInfo | Symbol }>
     for (const pattern of patterns) {
       const matchResult = stdOutput.match(pattern.pattern)
@@ -335,7 +340,7 @@ export class GHCIDebug {
 
       this.emitter.emit('paused-on-exception', {
         historyLength,
-        localBindings: mainBody.split('\n').slice(1)
+        localBindings: mainBody.split('\n').slice(1),
       })
     } else if (result === GHCIDebug.finishedDebugging) {
       this.emitter.emit('debug-finished', undefined)

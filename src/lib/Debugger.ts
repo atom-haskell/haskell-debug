@@ -11,24 +11,24 @@ import ExceptionInfo = _GHCIDebug.ExceptionInfo
 import path = require('path')
 
 class Debugger {
-  private lineHighlighter = new LineHighlighter()
-  private ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.getWorkingFolder())
-  private debugView = new DebugView()
-  private historyState = new HistoryState()
-  // tslint:disable-next-line: no-uninitialized-class-properties
+  private readonly lineHighlighter = new LineHighlighter()
+  private readonly ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.getWorkingFolder())
+  private readonly debugView = new DebugView()
+  private readonly historyState = new HistoryState()
+  // tslint:disable-next-line: no-uninitialized
   private debugPanel: atomAPI.Panel
-  private currentVariablesView = new CurrentVariablesView()
-  // tslint:disable-next-line: no-uninitialized-class-properties
+  private readonly currentVariablesView = new CurrentVariablesView()
+  // tslint:disable-next-line: no-uninitialized
   private currentVariablesPanel: atomAPI.Panel
-  private terminalReporter = new TerminalReporter()
-  private disposables = new atomAPI.CompositeDisposable()
+  private readonly terminalReporter = new TerminalReporter()
+  private readonly disposables = new atomAPI.CompositeDisposable()
   private debuggerEnabled = false
   private executingCommandFromConsole = false
 
   constructor(
     breakpoints: Breakpoint[],
     private editor: atomAPI.TextEditor,
-    private ideCabalBuilderCommand?: string
+    private ideCabalBuilderCommand?: string,
   ) {
     this.launchGHCIDebugAndConsole(breakpoints)
     this.displayGUI()
@@ -126,9 +126,8 @@ class Debugger {
   }
 
   private displayGUI() {
-    this.debugView = new DebugView()
     this.debugPanel = atom.workspace.addTopPanel({
-      item: this.debugView.element
+      item: this.debugView.element,
     })
 
     this.debugView.on('step', () => this.step())
@@ -137,9 +136,8 @@ class Debugger {
     this.debugView.on('continue', () => this.continue())
     this.debugView.on('stop', () => this.stop())
 
-    this.currentVariablesView = new CurrentVariablesView()
     this.currentVariablesPanel = atom.workspace.addTopPanel({
-      item: this.currentVariablesView.element
+      item: this.currentVariablesView.element,
     })
   }
 
@@ -183,7 +181,7 @@ class Debugger {
             this.debugView.disableAllDebugButtons()
           }
         },
-        100
+        100,
       )
     })
 
@@ -195,7 +193,7 @@ class Debugger {
       if (!this.executingCommandFromConsole) {
         atom.notifications.addError('GHCI Error', {
           detail: errorText,
-          dismissable: true
+          dismissable: true,
         })
       }
     })

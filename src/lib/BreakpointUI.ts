@@ -12,16 +12,16 @@ class BreakpointUI {
   public toggleBreakpoint(lineNumber: number, te: atomAPI.TextEditor) {
     const breakpoints = _.remove(this.breakpoints, {
       file: te.getPath(),
-      line: lineNumber
+      line: lineNumber,
     })
 
     if (breakpoints.length === 0) {
       this.setBreakpoint(
         {
           line: lineNumber,
-          file: te.getPath()
+          file: te.getPath(),
         },
-        te
+        te,
       )
     } else {
       breakpoints.forEach((breakpoint) => {
@@ -62,7 +62,7 @@ class BreakpointUI {
 
     te.decorateMarker(breakpointMarker, {
       type: 'line-number',
-      class: 'haskell-debug-breakpoint'
+      class: 'haskell-debug-breakpoint',
     })
 
     breakpointMarker.onDidChange((change) => {
@@ -79,7 +79,7 @@ class BreakpointUI {
 
   private setFileBreakpoints(te: atomAPI.TextEditor) {
     _.filter(this.breakpoints, {
-      file: te.getPath()
+      file: te.getPath(),
     }).forEach((breakpoint) => this.setBreakpoint(breakpoint, te))
   }
 }

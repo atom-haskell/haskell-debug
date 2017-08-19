@@ -20,15 +20,15 @@ class LineHighlighter {
       this.debugLineMarker = editor.markBufferRange(info.range, { invalidate: 'never' })
       editor.decorateMarker(this.debugLineMarker, {
         type: 'highlight',
-        class: 'highlight-green'
+        class: 'highlight-green',
       })
       editor.decorateMarker(this.debugLineMarker, {
         type: 'line-number',
-        class: 'highlight-green'
+        class: 'highlight-green',
       })
       editor.decorateMarker(this.debugLineMarker, {
         type: 'gutter',
-        class: 'highlight-green'
+        class: 'highlight-green',
       })
     } else {
       this.debugLineMarker.setBufferRange(info.range, {})
