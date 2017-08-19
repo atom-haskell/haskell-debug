@@ -25,7 +25,7 @@
             "name": "Launch cmd",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}/lib/TerminalEcho.js",
+            "program": "${workspaceRoot}/bin/TerminalEcho.js",
             "stopOnEntry": false,
             "args": [],
             "cwd": "${workspaceRoot}",
