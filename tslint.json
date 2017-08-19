@@ -10,7 +10,6 @@
       "ordered-imports": false,
       "jsdoc-format": false,
       "trailing-comma": false,
-      "space-before-function-paren": true,
       "one-variable-per-declaration": false,
       "no-unused-expression": [true, "allow-fast-null-checks"],
       "no-unused-new": true,
