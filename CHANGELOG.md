@@ -1,3 +1,6 @@
+## 0.3.3
+* Move TerminalEcho to \/bin; target es5 with it
+
 ## 0.3.2
 * Fix for trace history longer than 100
 * Typed emitter
