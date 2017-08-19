@@ -29,7 +29,8 @@
         "oldTypings/*.d.ts"
     ],
     "exclude": [
-        "typings/etch.d.ts"
+        "typings/etch.d.ts",
+        "src/bin"
     ],
     "compileOnSave": true
 }
