@@ -1,13 +1,7 @@
 import net = require('net')
 import os = require('os')
 import readline = require('readline')
-
-type Message =
-  { type: 'message', content: string } |
-  { type: 'user_input' } |
-  { type: 'destroy-prompt' } |
-  { type: 'display-command', command: string } |
-  { type: 'close' }
+import { Message } from './message'
 
 const PIPE_NAME = 'haskell-debug'
 
@@ -16,7 +10,7 @@ const connectionPath = os.platform() === 'win32' ?
 const client = net.connect(connectionPath)
 
 const rl = readline.createInterface({
-  input: process.stdin
+  input: process.stdin,
 })
 
 let ignoreOutput = false
@@ -57,7 +51,7 @@ function onMessage(message: Message) {
     rl.close()
   } else if (message.type === 'close') {
     process.exit()
-  } else {
+  } else if (message.type === 'user-input') {
     rl.prompt()
   }
 }

@@ -137,7 +137,7 @@ export function serialize() {
 
 export function consumeHaskellUpi(reg: UPI.IUPIRegistration) {
   const tooltipOverride = new TooltipOverride(async (expression) => {
-    if (debuggerInst === undefined) { return }
+    if (debuggerInst === undefined) { return undefined }
     return debuggerInst.resolveExpression(expression)
   })
   upi = reg({

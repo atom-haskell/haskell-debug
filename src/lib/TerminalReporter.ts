@@ -3,7 +3,7 @@ import net = require('net')
 import os = require('os')
 import util = require('util')
 import atomAPI = require('atom')
-import {Message} from '../bin/message'
+import { Message } from '../bin/message'
 
 const PIPE_PATH = 'haskell-debug'
 

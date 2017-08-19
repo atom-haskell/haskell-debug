@@ -9,13 +9,13 @@ class TooltipOverride {
       range = editor.bufferRangeForScopeAtPosition('identifier.haskell', range.start)
     }
     if (!range || range.isEmpty()) {
-      return
+      return undefined
     }
     const debugValue = await this.resolveExpression(editor.getTextInBufferRange(range))
     if (debugValue !== undefined) {
       return { range, text: debugValue }
     }
-    return
+    return undefined
   }
 }
 

@@ -105,16 +105,16 @@ export class GHCIDebug {
   */
   public async resolveExpression(expression: string) {
     if (!expression.trim()) {
-      return
+      return undefined
     }
     // expressions can't have new lines
     if (expression.indexOf('\n') !== -1) {
-      return
+      return undefined
     }
 
     const getExpression = (ghciOutput: string, variable: string) => {
       const matchResult = ghciOutput.match(/[^ ]* = (.*)/)
-      if (!matchResult) { return }
+      if (!matchResult) { return undefined }
       return matchResult[1]
     }
 
@@ -249,7 +249,7 @@ export class GHCIDebug {
 
           await currentPromise
 
-          if (this.commands.length !== 0 && this.currentCommand === undefined) {
+          if (this.commands.length !== 0) {
             shiftAndRunCommand()
           }
         }

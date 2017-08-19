@@ -131,11 +131,11 @@ class Debugger {
       item: this.debugView.element
     })
 
-    this.debugView.emitter.on('step', () => this.step())
-    this.debugView.emitter.on('back', () => this.back())
-    this.debugView.emitter.on('forward', () => this.forward())
-    this.debugView.emitter.on('continue', () => this.continue())
-    this.debugView.emitter.on('stop', () => this.stop())
+    this.debugView.on('step', () => this.step())
+    this.debugView.on('back', () => this.back())
+    this.debugView.on('forward', () => this.forward())
+    this.debugView.on('continue', () => this.continue())
+    this.debugView.on('stop', () => this.stop())
 
     this.currentVariablesView = new CurrentVariablesView()
     this.currentVariablesPanel = atom.workspace.addTopPanel({
@@ -149,8 +149,8 @@ class Debugger {
     }
 
     this.debugView.enableAllDebugButtons()
-    this.debugView.buttons.back.isEnabled = this.historyState.backEnabled
-    this.debugView.buttons.forward.isEnabled = this.historyState.forwardEnabled
+    this.debugView.setButtonEnabled('back', this.historyState.backEnabled)
+    this.debugView.setButtonEnabled('forward', this.historyState.forwardEnabled)
     this.debuggerEnabled = true
   }
 
