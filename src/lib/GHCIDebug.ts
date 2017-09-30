@@ -87,7 +87,7 @@ export class GHCIDebug {
     this.run(':unset -fbreak-on-error')
 
     switch (level) {
-      case'exceptions':
+      case 'exceptions':
         this.run(':set -fbreak-on-exception')
         break
       case 'errors':
@@ -102,7 +102,12 @@ export class GHCIDebug {
     if (typeof breakpoint === 'string') {
       this.run(`:break ${breakpoint}`)
     } else {
-      this.run(`:break ${breakpoint.file} ${breakpoint.line}`)
+      this.run(`:show modules`)
+        .then(modules => {
+          const matchResult = modules.match(new RegExp('([^ ]+) +\\( +' + breakpoint.file))
+          if (!matchResult) { return }
+          this.run(`:break ${matchResult[1]} ${breakpoint.line}`)
+        })
     }
   }
 
