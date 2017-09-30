@@ -98,16 +98,17 @@ export class GHCIDebug {
     }
   }
 
-  public addBreakpoint(breakpoint: Breakpoint | string) {
+  public async addBreakpoint(breakpoint: Breakpoint | string) {
     if (typeof breakpoint === 'string') {
       this.run(`:break ${breakpoint}`)
     } else {
-      this.run(`:show modules`)
-        .then(modules => {
-          const matchResult = modules.match(new RegExp('([^ ]+) +\\( +' + breakpoint.file))
-          if (!matchResult) { return }
-          this.run(`:break ${matchResult[1]} ${breakpoint.line}`)
-        })
+      const modules = await this.run(':show modules')
+      const matchResult = modules.match(new RegExp('([^ ]+) +\\( +' + breakpoint.file))
+      if (matchResult) {
+        this.run(`:break ${matchResult[1]} ${breakpoint.line}`)
+      } else {
+        atom.notifications.addError(`Failed to set breakpoint on ${breakpoint.file}`)
+      }
     }
   }
 
