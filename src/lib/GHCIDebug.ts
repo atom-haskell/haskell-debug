@@ -3,6 +3,7 @@ import stream = require('stream')
 import os = require('os')
 import path = require('path')
 import atomAPI = require('atom')
+import * as Collections from 'typescript-collections';
 
 export interface BreakInfo {
   filename: string
@@ -51,6 +52,7 @@ export class GHCIDebug {
   private commands = [] as Command[]
   private currentCommand?: Command
   private commandFinishedString = 'command_finish_o4uB1whagteqE8xBq9oq'
+  private moduleNameByPath?: Collections.Dictionary<string, string>
 
   constructor(ghciCommand = 'ghci', ghciArgs: string[] = [], folder?: string) {
 
@@ -102,11 +104,29 @@ export class GHCIDebug {
     if (typeof breakpoint === 'string') {
       this.run(`:break ${breakpoint}`)
     } else {
-      const modules = await this.run(':show modules')
-      const matchResult = modules.match(new RegExp('^([^ ]+) +\\( +' + breakpoint.file, 'm'))
-      if (matchResult) {
-        this.run(`:break ${matchResult[1]} ${breakpoint.line}`)
-      } else {
+      // Load the list of modules and their paths
+      if (!this.moduleNameByPath)
+      {
+        this.moduleNameByPath = new Collections.Dictionary<string, string>()
+        const modules = await this.run(':show modules')
+        const regex = new RegExp('^([^ ]+) +\\( +([^,]+)', 'gm')
+        var matchResult: RegExpExecArray? = null
+        while (matchResult = regex.exec(modules))
+        {
+          if (matchResult) {
+           this.moduleNameByPath[matchResult[2]] = matchResult[1]
+          }
+          matchResult = regex.exec(modules)
+        }
+      }
+
+      // Set the break point
+      if (this.moduleNameByPath.containsKey(breakpoint.file))
+      {
+        this.run(`:break ${this.moduleNameByPath[breakpoint.file]} ${breakpoint.line}`)
+      }
+      else
+      {
         atom.notifications.addError(`Failed to set breakpoint on ${breakpoint.file}`)
       }
     }
