@@ -103,7 +103,7 @@ export class GHCIDebug {
       this.run(`:break ${breakpoint}`)
     } else {
       const modules = await this.run(':show modules')
-      const matchResult = modules.match(new RegExp('([^ ]+) +\\( +' + breakpoint.file))
+      const matchResult = modules.match(new RegExp('^([^ ]+) +\\( +' + breakpoint.file, 'm'))
       if (matchResult) {
         this.run(`:break ${matchResult[1]} ${breakpoint.line}`)
       } else {
