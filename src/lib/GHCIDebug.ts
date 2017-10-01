@@ -3,7 +3,6 @@ import stream = require('stream')
 import os = require('os')
 import path = require('path')
 import atomAPI = require('atom')
-import * as Collections from 'typescript-collections';
 
 export interface BreakInfo {
   filename: string
@@ -52,7 +51,7 @@ export class GHCIDebug {
   private commands = [] as Command[]
   private currentCommand?: Command
   private commandFinishedString = 'command_finish_o4uB1whagteqE8xBq9oq'
-  private moduleNameByPath?: Collections.Dictionary<string, string>
+  private moduleNameByPath: Map<string, string> = new Map()
 
   constructor(ghciCommand = 'ghci', ghciArgs: string[] = [], folder?: string) {
 
@@ -104,30 +103,15 @@ export class GHCIDebug {
     if (typeof breakpoint === 'string') {
       this.run(`:break ${breakpoint}`)
     } else {
-      // Load the list of modules and their paths
-      if (!this.moduleNameByPath)
-      {
-        this.moduleNameByPath = new Collections.Dictionary<string, string>()
-        const modules = await this.run(':show modules')
-        const regex = new RegExp('^([^ ]+) +\\( +([^,]+)', 'gm')
-        var matchResult: RegExpExecArray? = null
-        while (matchResult = regex.exec(modules))
-        {
-          if (matchResult) {
-           this.moduleNameByPath[matchResult[2]] = matchResult[1]
-          }
-          matchResult = regex.exec(modules)
-        }
-      }
-
-      // Set the break point
-      if (this.moduleNameByPath.containsKey(breakpoint.file))
-      {
-        this.run(`:break ${this.moduleNameByPath[breakpoint.file]} ${breakpoint.line}`)
-      }
-      else
-      {
-        atom.notifications.addError(`Failed to set breakpoint on ${breakpoint.file}`)
+      try {
+        const moduleName: string = await this.moduleNameFromFilePath(breakpoint.file)
+        this.run(`:break ${moduleName} ${breakpoint.line}`)
+      } catch (e) {
+        atom.notifications.addError(`Failed to set breakpoint on ${breakpoint.file}`, {
+          detail: e,
+          stack: e.stack,
+          dismissable: true,
+        })
       }
     }
   }
@@ -423,6 +407,27 @@ export class GHCIDebug {
       this.currentCommandBuffer = this.currentCommandBuffer.slice(
         finishStringPosition + this.commandFinishedString.length)
       this.onStdoutReadable()
+    }
+  }
+
+  private async moduleNameFromFilePath(filePath: string): Promise<string> {
+    const cachedModuleName = this.moduleNameByPath.get(filePath)
+    if (cachedModuleName) return cachedModuleName
+    const modules = (await this.run(':show modules')).split(os.EOL)
+    const regex = /^([^ ]+) +\( +(.+), +\w+ +\)$/
+    for (const moduleStr of modules) {
+      const matchResult = regex.exec(moduleStr)
+      if (matchResult) {
+        this.moduleNameByPath.set(matchResult[2], matchResult[1])
+      } else {
+        console.error(`Unexpected reply from GHCI ':show modules': ${moduleStr}`)
+      }
+    }
+    const newCachedModuleName = this.moduleNameByPath.get(filePath)
+    if (newCachedModuleName) {
+      return newCachedModuleName
+    } else {
+      throw new Error(`Couldn't find module name for ${filePath}`)
     }
   }
 }
