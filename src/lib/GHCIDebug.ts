@@ -51,6 +51,7 @@ export class GHCIDebug {
   private commands = [] as Command[]
   private currentCommand?: Command
   private commandFinishedString = 'command_finish_o4uB1whagteqE8xBq9oq'
+  private moduleNameByPath: Map<string, string> = new Map()
 
   constructor(ghciCommand = 'ghci', ghciArgs: string[] = [], folder?: string) {
 
@@ -87,7 +88,7 @@ export class GHCIDebug {
     this.run(':unset -fbreak-on-error')
 
     switch (level) {
-      case'exceptions':
+      case 'exceptions':
         this.run(':set -fbreak-on-exception')
         break
       case 'errors':
@@ -98,11 +99,20 @@ export class GHCIDebug {
     }
   }
 
-  public addBreakpoint(breakpoint: Breakpoint | string) {
+  public async addBreakpoint(breakpoint: Breakpoint | string) {
     if (typeof breakpoint === 'string') {
       this.run(`:break ${breakpoint}`)
     } else {
-      this.run(`:break ${breakpoint.file} ${breakpoint.line}`)
+      try {
+        const moduleName: string = await this.moduleNameFromFilePath(breakpoint.file)
+        this.run(`:break ${moduleName} ${breakpoint.line}`)
+      } catch (e) {
+        atom.notifications.addError(`Failed to set breakpoint on ${breakpoint.file}`, {
+          detail: e,
+          stack: e.stack,
+          dismissable: true,
+        })
+      }
     }
   }
 
@@ -397,6 +407,27 @@ export class GHCIDebug {
       this.currentCommandBuffer = this.currentCommandBuffer.slice(
         finishStringPosition + this.commandFinishedString.length)
       this.onStdoutReadable()
+    }
+  }
+
+  private async moduleNameFromFilePath(filePath: string): Promise<string> {
+    const cachedModuleName = this.moduleNameByPath.get(filePath)
+    if (cachedModuleName) return cachedModuleName
+    const modules = (await this.run(':show modules')).split(os.EOL)
+    const regex = /^([^ ]+) +\( +(.+), +\w+ +\)$/
+    for (const moduleStr of modules) {
+      const matchResult = regex.exec(moduleStr)
+      if (matchResult) {
+        this.moduleNameByPath.set(matchResult[2], matchResult[1])
+      } else {
+        console.error(`Unexpected reply from GHCI ':show modules': ${moduleStr}`)
+      }
+    }
+    const newCachedModuleName = this.moduleNameByPath.get(filePath)
+    if (newCachedModuleName) {
+      return newCachedModuleName
+    } else {
+      throw new Error(`Couldn't find module name for ${filePath}`)
     }
   }
 }
