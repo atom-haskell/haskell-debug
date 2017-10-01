@@ -1,3 +1,8 @@
+## 0.3.4
+* Support breakpoints in non-main modules (@DavidEichamnn)
+* :art: Code cleanup
+* Package deactivation (rudimentary)
+
 ## 0.3.3
 * Move TerminalEcho to \/bin; target es5 with it
 
