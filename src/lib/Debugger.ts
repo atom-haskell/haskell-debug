@@ -1,25 +1,22 @@
-import atomAPI = require('atom')
-import _GHCIDebug = require('./GHCIDebug')
-import DebugView = require('./views/DebugView')
-import CurrentVariablesView = require('./views/CurrentVariablesView')
-import HistoryState = require('./HistoryState')
-import LineHighlighter = require('./LineHighlighter')
-import TerminalReporter = require('./TerminalReporter')
-import GHCIDebug = _GHCIDebug.GHCIDebug
-import BreakInfo = _GHCIDebug.BreakInfo
-import ExceptionInfo = _GHCIDebug.ExceptionInfo
+import * as atomAPI from 'atom'
+import { GHCIDebug, BreakInfo, ExceptionInfo } from './GHCIDebug'
+import { DebugView } from './views/DebugView'
+import { CurrentVariablesView } from './views/CurrentVariablesView'
+import { HistoryState } from './HistoryState'
+import { LineHighlighter } from './LineHighlighter'
+import { TerminalReporter } from './TerminalReporter'
 import path = require('path')
 
-class Debugger {
+export class Debugger {
   private readonly lineHighlighter = new LineHighlighter()
   private readonly ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.getWorkingFolder())
   private readonly debugView = new DebugView()
   private readonly historyState = new HistoryState()
   // tslint:disable-next-line: no-uninitialized
-  private debugPanel: atomAPI.Panel
+  private debugPanel: atomAPI.Panel<HTMLElement>
   private readonly currentVariablesView = new CurrentVariablesView()
   // tslint:disable-next-line: no-uninitialized
-  private currentVariablesPanel: atomAPI.Panel
+  private currentVariablesPanel: atomAPI.Panel<HTMLElement>
   private readonly terminalReporter = new TerminalReporter()
   private readonly disposables = new atomAPI.CompositeDisposable()
   private debuggerEnabled = false
@@ -152,7 +149,7 @@ class Debugger {
     this.debuggerEnabled = true
   }
 
-  private launchGHCIDebugAndConsole(breakpoints: Breakpoint[]) {
+  private async launchGHCIDebugAndConsole(breakpoints: Breakpoint[]) {
     this.ghciDebug.on('line-changed', (info: BreakInfo) => {
       this.lineHighlighter.hightlightLine(info)
       this.updateHistoryLengthAndEnableButtons(info.historyLength)
@@ -202,7 +199,7 @@ class Debugger {
       this.terminalReporter.write(errorText)
     })
 
-    this.ghciDebug.addedAllListeners()
+    await this.ghciDebug.addedAllListeners()
 
     this.terminalReporter.on('command', async (command: string) => {
       this.executingCommandFromConsole = true
@@ -237,5 +234,3 @@ class Debugger {
     return path.dirname(fileToDebug)
   }
 }
-
-export = Debugger

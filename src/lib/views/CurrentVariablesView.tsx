@@ -1,7 +1,8 @@
+// tslint:disable:no-unsafe-any
 import Draggable = require('draggable')
 import React = require('./ReactPolyfill')
 
-class CurrentVariablesView {
+export class CurrentVariablesView {
   public element: HTMLElement
   private draggable: Draggable
   private list: HTMLElement
@@ -35,9 +36,7 @@ class CurrentVariablesView {
     }
     for (const binding of localBindings) {
       this.list.appendChild(
-        <li>
-          {binding}
-        </li>,
+        <li>{binding}</li>,
       )
     }
 
@@ -52,5 +51,3 @@ class CurrentVariablesView {
     // TODO: noop?
   }
 }
-
-export = CurrentVariablesView

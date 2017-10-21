@@ -1,11 +1,12 @@
-import Debugger = require('./Debugger')
-import BreakpointUI = require('./BreakpointUI')
-import TooltipOverride = require('./TooltipOverride')
-import atomAPI = require('atom')
+import { Debugger } from './Debugger'
+import { BreakpointUI } from './BreakpointUI'
+import { TooltipOverride } from './TooltipOverride'
+import * as atomAPI from 'atom'
 import os = require('os')
 import path = require('path')
 import cp = require('child_process')
 import { debugModes } from './config'
+import { selectDebugModeView } from './views/SelectDebugModeView'
 export { config } from './config'
 
 const breakpointUI = new BreakpointUI()
@@ -56,7 +57,6 @@ const commands = {
     )
   },
   'set-break-on-exception': async () => {
-    const selectDebugModeView = require('./views/SelectDebugModeView')
     const result = await selectDebugModeView(debugModes, atom.config.get('haskell-debug.breakOnException'))
     if (result !== undefined) { atom.config.set('haskell-debug.breakOnException', result) }
   },

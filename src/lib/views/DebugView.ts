@@ -1,10 +1,10 @@
 import Draggable = require('draggable')
-import Button = require('./Button')
-import atomAPI = require('atom')
+import { Button } from './Button'
+import * as atomAPI from 'atom'
 
 type ButtonTypes = 'step' | 'back' | 'forward' | 'continue' | 'stop'
 
-class DebugView {
+export class DebugView {
   public element: HTMLElement
   private emitter: atomAPI.TEmitter<{
     [K in ButtonTypes]: undefined
@@ -83,5 +83,3 @@ class DebugView {
     }
   }
 }
-
-export = DebugView

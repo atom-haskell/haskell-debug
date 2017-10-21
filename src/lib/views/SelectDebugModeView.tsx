@@ -3,20 +3,23 @@ import React = require('./ReactPolyfill')
 import atomAPI = require('atom')
 
 interface Item {
-  value: string
+  value: Values
   description: string
 }
 
-async function selectDebugModeView(debugModes: Item[], activeItem: string): Promise<string | undefined> {
+type Values = 'none' | 'errors' | 'exceptions'
+
+export async function selectDebugModeView(debugModes: Item[], activeItem: string): Promise<Values | undefined> {
   // this.storeFocusedElement()
   // this.setItems(debugModes)
-  let panel: atomAPI.Panel | undefined
-  let res: string | undefined
+  let panel: atomAPI.Panel<SelectListView<Item>> | undefined
+  let res: Values | undefined
   try {
-    res = await new Promise<string | undefined>((resolve, reject) => {
+    res = await new Promise<Values | undefined>((resolve, reject) => {
       const select = new SelectListView({
         items: debugModes,
         itemsClassList: ['mark-active'],
+        // tslint:disable-next-line:no-unsafe-any
         elementForItem: (item: Item) => <li class={item.value === activeItem ? 'active' : ''}>{item.description}</li>,
         filterKeyForItem: (item) => item.value,
         didCancelSelection: () => {
@@ -37,5 +40,3 @@ async function selectDebugModeView(debugModes: Item[], activeItem: string): Prom
   }
   return res
 }
-
-export = selectDebugModeView

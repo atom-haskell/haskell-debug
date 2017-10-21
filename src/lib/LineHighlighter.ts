@@ -1,7 +1,7 @@
 import { BreakInfo } from './GHCIDebug'
 import atomAPI = require('atom')
 
-class LineHighlighter {
+export class LineHighlighter {
   private debugLineMarker?: atomAPI.DisplayMarker
   private currentMarkedEditor?: atomAPI.TextEditor
 
@@ -42,5 +42,3 @@ class LineHighlighter {
     }
   }
 }
-
-export = LineHighlighter

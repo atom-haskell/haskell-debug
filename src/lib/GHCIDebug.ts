@@ -76,42 +76,44 @@ export class GHCIDebug {
     this.stop()
   }
 
-  public loadModule(name: string) {
+  public async loadModule(name: string) {
     const cwd = path.dirname(name)
 
-    this.run(`:cd ${cwd}`)
-    this.run(`:load ${name}`)
+    await this.run(`:cd ${cwd}`)
+    await this.run(`:load ${name}`)
   }
 
-  public setExceptionBreakLevel(level: ExceptionBreakLevels) {
-    this.run(':unset -fbreak-on-exception')
-    this.run(':unset -fbreak-on-error')
+  public async setExceptionBreakLevel(level: ExceptionBreakLevels) {
+    await this.run(':unset -fbreak-on-exception')
+    await this.run(':unset -fbreak-on-error')
 
     switch (level) {
       case 'exceptions':
-        this.run(':set -fbreak-on-exception')
+        await this.run(':set -fbreak-on-exception')
         break
       case 'errors':
-        this.run(':set -fbreak-on-error')
+        await this.run(':set -fbreak-on-error')
         break
       case 'none': // no-op
         break
     }
   }
 
-  public async addBreakpoint(breakpoint: Breakpoint | string) {
+  public async addBreakpoint(breakpoint: Breakpoint | string): Promise<void> {
     if (typeof breakpoint === 'string') {
-      this.run(`:break ${breakpoint}`)
+      await this.run(`:break ${breakpoint}`)
     } else {
       try {
         const moduleName: string = await this.moduleNameFromFilePath(breakpoint.file)
-        this.run(`:break ${moduleName} ${breakpoint.line}`)
+        await this.run(`:break ${moduleName} ${breakpoint.line}`)
       } catch (e) {
+        // tslint:disable:no-unsafe-any
         atom.notifications.addError(`Failed to set breakpoint on ${breakpoint.file}`, {
           detail: e,
           stack: e.stack,
           dismissable: true,
         })
+        // tslint:enable:no-unsafe-any
       }
     }
   }
@@ -186,7 +188,7 @@ export class GHCIDebug {
   }
 
   public async addedAllListeners() {
-    this.startText.then((text) => {
+    return this.startText.then((text) => {
       const firstPrompt = text.indexOf('> ')
       this.emitter.emit('console-output', text.slice(0, firstPrompt + 2))
     })
@@ -218,8 +220,7 @@ export class GHCIDebug {
       }
     }
 
-    let currentPromise: Promise<string>
-    return currentPromise = new Promise<string>((fulfil) => {
+    const p = new Promise<string>((fulfil) => {
       const command: Command = {
         text: commandText,
         emitCommandOutput,
@@ -240,32 +241,20 @@ export class GHCIDebug {
           if (lastEndOfLinePos === -1) {
             /*i.e. no output has been produced*/
             if (emitStatusChanges) {
-              this.emitStatusChanges(output, '', emitHistoryLength).then(() => {
-                _fulfil('')
-              })
-            } else {
-              _fulfil('')
+              await this.emitStatusChanges(output, '', emitHistoryLength)
             }
+            _fulfil('')
           } else {
             const promptBeginPosition = lastEndOfLinePos + os.EOL.length
 
             if (emitStatusChanges) {
-              this.emitStatusChanges(
+              await this.emitStatusChanges(
                 output.slice(promptBeginPosition, output.length),
                 output.slice(0, lastEndOfLinePos),
                 emitHistoryLength,
-              ).then(() => {
-                _fulfil(output.slice(0, lastEndOfLinePos))
-              })
-            } else {
-              _fulfil(output.slice(0, lastEndOfLinePos))
+              )
             }
-          }
-
-          await currentPromise
-
-          if (this.commands.length !== 0) {
-            shiftAndRunCommand()
+            _fulfil(output.slice(0, lastEndOfLinePos))
           }
         },
       }
@@ -276,6 +265,18 @@ export class GHCIDebug {
         shiftAndRunCommand()
       }
     })
+    p.then (() => {
+      if (this.commands.length !== 0) {
+        shiftAndRunCommand()
+      }
+    }).catch((e: Error) => {
+      atom.notifications.addError('An error happened', {
+        detail: e,
+        stack: e.stack,
+        dismissable: true,
+      })
+    })
+    return p
   }
 
   private addReadyEvent() {
@@ -368,6 +369,7 @@ export class GHCIDebug {
   }
 
   private onStderrReadable() {
+    // tslint:disable-next-line:no-unsafe-any
     const stderrOutput: Buffer = this.stderr.read()
     if (!stderrOutput || this.ignoreErrors) {
       return // this is the end of the input stream
@@ -387,6 +389,7 @@ export class GHCIDebug {
   }
 
   private onStdoutReadable() {
+    // tslint:disable-next-line:no-unsafe-any
     const currentString = (this.stdout.read() || '').toString()
 
     this.currentCommandBuffer += currentString

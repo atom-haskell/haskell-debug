@@ -1,6 +1,6 @@
 import * as os from 'os'
 
-export const debugModes = [
+export const debugModes: Array<{value: 'none' | 'errors' | 'exceptions', description: string}> = [
   { value: 'none', description: 'Don\'t pause on any exceptions' },
   { value: 'errors', description: 'Pause on errors (uncaught exceptions)' },
   { value: 'exceptions', description: 'Pause on exceptions' },

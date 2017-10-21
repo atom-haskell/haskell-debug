@@ -7,7 +7,7 @@ import { Message } from '../bin/message'
 
 const PIPE_PATH = 'haskell-debug'
 
-class TerminalReporter {
+export class TerminalReporter {
   private emitter: atomAPI.TEmitter<{
     'command': string
     'close': undefined
@@ -103,5 +103,3 @@ class TerminalReporter {
     }
   }
 }
-
-export = TerminalReporter

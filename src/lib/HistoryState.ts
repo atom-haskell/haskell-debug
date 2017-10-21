@@ -1,5 +1,5 @@
 
-class HistoryState {
+export class HistoryState {
   private _maxPosition = 0
   private _backEnabled = true
   private _forwardEnabled = true
@@ -43,5 +43,3 @@ class HistoryState {
     this._backEnabled = this._currentPosition !== this._maxPosition
   }
 }
-
-export = HistoryState

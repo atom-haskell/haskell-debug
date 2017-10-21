@@ -1,7 +1,7 @@
 import atomAPI = require('atom')
 import _ = require('lodash')
 
-class BreakpointUI {
+export class BreakpointUI {
   private _breakpoints: Breakpoint[] = []
   private markers: WeakMap<Breakpoint, atomAPI.DisplayMarker> = new WeakMap()
 
@@ -83,5 +83,3 @@ class BreakpointUI {
     }).forEach((breakpoint) => this.setBreakpoint(breakpoint, te))
   }
 }
-
-export = BreakpointUI

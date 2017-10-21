@@ -1,4 +1,4 @@
-class TooltipOverride {
+export class TooltipOverride {
   constructor(private resolveExpression: (expression: string) => Promise<string | undefined>) {
   }
 
@@ -18,5 +18,3 @@ class TooltipOverride {
     return undefined
   }
 }
-
-export = TooltipOverride

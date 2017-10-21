@@ -1,6 +1,6 @@
 import atomAPI = require('atom')
 
-class Button {
+export class Button {
   public element: HTMLElement
   private emitter: atomAPI.TEmitter<{
     'click': undefined
@@ -49,5 +49,3 @@ class Button {
     this.tooltip.dispose()
   }
 }
-
-export = Button
