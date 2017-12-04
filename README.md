@@ -1,4 +1,4 @@
-# haskell-debug
+# haskell-debug ![](https://david-dm.org/atom-haskell/haskell-debug.svg)
 Implements a graphical haskell debugger in atom, using `ghci`.
 
 ![main screenshot](https://cloud.githubusercontent.com/assets/6304200/18360164/cce580e8-75f4-11e6-9945-279fc55dabcc.png)
