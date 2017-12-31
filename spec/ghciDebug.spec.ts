@@ -28,7 +28,7 @@ describe('GHCIDebug', function () {
     // reload the module for a clean copy every time
   })
 
-  it.only('breaks at breakpoints', async () => {
+  it('breaks at breakpoints', async () => {
     await session.addBreakpoint('test1')
     const p = wrapPromise(session, 'line-changed')
     await session.startDebug('test1')
