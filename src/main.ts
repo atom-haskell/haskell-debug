@@ -7,6 +7,7 @@ import path = require('path')
 import cp = require('child_process')
 import { debugModes } from './config'
 import { selectDebugModeView } from './views/SelectDebugModeView'
+import * as UPI from 'atom-haskell-upi'
 export { config } from './config'
 
 const breakpointUI = new BreakpointUI()
@@ -16,8 +17,10 @@ let upi: UPI.IUPIInstance | undefined
 let state: HaskellDebugState | undefined
 let disposables: atomAPI.CompositeDisposable | undefined
 
+export type TECE = atomAPI.CommandEvent<atomAPI.TextEditorElement>
+
 const commands = {
-  'debug': async ({ currentTarget }: atomAPI.IEventDesc) => {
+  'debug': async ({ currentTarget }: TECE) => {
     const ob = upi && await upi.getOthersConfigParam<{ name: string }>('ide-haskell-cabal', 'builder')
     if (ob) {
       debuggerInst = new Debugger(breakpointUI.breakpoints, currentTarget.getModel(), ob.name)
@@ -50,7 +53,7 @@ const commands = {
       debuggerInst.continue()
     }
   },
-  'toggle-breakpoint': ({ currentTarget }: atomAPI.IEventDesc) => {
+  'toggle-breakpoint': ({ currentTarget }: TECE) => {
     breakpointUI.toggleBreakpoint(
       currentTarget.getModel().getCursorBufferPosition().row + 1,
       currentTarget.getModel(),
@@ -82,7 +85,7 @@ function onFirstRun() {
   })
 }
 
-function activePaneObserver(pane: atomAPI.Pane) {
+function activePaneObserver(pane: object) {
   if (atom.workspace.isTextEditor(pane)) {
     const te: atomAPI.TextEditor & { hasHaskellBreakpoints?: boolean } = pane
     const scopes = te.getRootScopeDescriptor().getScopesArray()

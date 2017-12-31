@@ -1,4 +1,3 @@
-// tslint:disable:no-unsafe-any
 import Draggable = require('draggable')
 import React = require('./ReactPolyfill')
 

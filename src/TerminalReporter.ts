@@ -3,14 +3,15 @@ import net = require('net')
 import os = require('os')
 import util = require('util')
 import atomAPI = require('atom')
-import { Message } from '../bin/message'
+import { Message } from '../bin-src/message'
 
 const PIPE_PATH = 'haskell-debug'
 
 export class TerminalReporter {
-  private emitter: atomAPI.TEmitter<{
-    'command': string
+  private emitter: atomAPI.Emitter<{
     'close': undefined
+  }, {
+    'command': string
   }> = new atomAPI.Emitter()
   // tslint:disable-next-line: member-ordering
   public readonly on = this.emitter.on.bind(this.emitter)

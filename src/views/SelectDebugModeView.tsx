@@ -15,11 +15,10 @@ export async function selectDebugModeView(debugModes: Item[], activeItem: string
   let panel: atomAPI.Panel<SelectListView<Item>> | undefined
   let res: Values | undefined
   try {
-    res = await new Promise<Values | undefined>((resolve, reject) => {
+    res = await new Promise<Values | undefined>((resolve) => {
       const select = new SelectListView({
         items: debugModes,
         itemsClassList: ['mark-active'],
-        // tslint:disable-next-line:no-unsafe-any
         elementForItem: (item: Item) => <li class={item.value === activeItem ? 'active' : ''}>{item.description}</li>,
         filterKeyForItem: (item) => item.value,
         didCancelSelection: () => {

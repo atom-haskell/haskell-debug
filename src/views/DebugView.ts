@@ -6,7 +6,7 @@ type ButtonTypes = 'step' | 'back' | 'forward' | 'continue' | 'stop'
 
 export class DebugView {
   public element: HTMLElement
-  private emitter: atomAPI.TEmitter<{
+  private emitter: atomAPI.Emitter<{
     [K in ButtonTypes]: undefined
   }> = new atomAPI.Emitter()
   // tslint:disable-next-line: member-ordering

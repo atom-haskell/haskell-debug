@@ -23,17 +23,25 @@ interface Command {
   onFinish: (output: string) => any
 }
 
+export interface Breakpoint {
+  line: number // 1 is the greatest number this can contain
+  file: string | undefined // absolute path
+}
+
+export type ExceptionBreakLevels = 'none' | 'exceptions' | 'errors'
+
 export class GHCIDebug {
   private static pausedOnError = Symbol('Paused on Error')
   private static finishedDebugging = Symbol('Finished debugging')
 
-  private emitter: atomAPI.TEmitter<{
-    'paused-on-exception': ExceptionInfo /// Emmited when the debugger is at an exception
+  private emitter: atomAPI.Emitter<{
+    'debug-finished': undefined /// Emmited when the debugger has reached the end of the program
     'ready': ExceptionInfo | undefined /// Emmited when ghci has just stopped executing a command
+  }, {
+    'paused-on-exception': ExceptionInfo /// Emmited when the debugger is at an exception
     'error': string /// Emmited when stderr has input
     'error-completed': string /// Emmited when ghci reports an error for a given command
     'line-changed': BreakInfo /// Emmited when the line that the debugger is on changes
-    'debug-finished': undefined /// Emmited when the debugger has reached the end of the program
     'console-output': string /// Emmited when the ghci has outputed something to stdout, excluding the extra prompt
     'command-issued': string /// Emmited when a command has been executed
   }> = new atomAPI.Emitter()
@@ -102,19 +110,22 @@ export class GHCIDebug {
   public async addBreakpoint(breakpoint: Breakpoint | string): Promise<void> {
     if (typeof breakpoint === 'string') {
       await this.run(`:break ${breakpoint}`)
-    } else {
+    } else if (breakpoint.file) {
       try {
         const moduleName: string = await this.moduleNameFromFilePath(breakpoint.file)
         await this.run(`:break ${moduleName} ${breakpoint.line}`)
       } catch (e) {
-        // tslint:disable:no-unsafe-any
         atom.notifications.addError(`Failed to set breakpoint on ${breakpoint.file}`, {
-          detail: e,
-          stack: e.stack,
+          detail: (e as Error).toString(),
+          stack: (e as Error).stack,
           dismissable: true,
         })
-        // tslint:enable:no-unsafe-any
       }
+    } else {
+      atom.notifications.addError('Failed to set breakpoint', {
+        detail: 'Text editor has no filename',
+        dismissable: true,
+      })
     }
   }
 
@@ -129,7 +140,7 @@ export class GHCIDebug {
       return undefined
     }
 
-    const getExpression = (ghciOutput: string, variable: string) => {
+    const getExpression = (ghciOutput: string) => {
       const matchResult = ghciOutput.match(/[^ ]* = (.*)/)
       if (!matchResult) { return undefined }
       return matchResult[1]
@@ -141,7 +152,7 @@ export class GHCIDebug {
     try {
       // try printing expression
       const printingResult = getExpression(
-        await this.run(`:print ${expression}`, false, false, false), expression)
+        await this.run(`:print ${expression}`, false, false, false))
       if (printingResult !== undefined) {
         return printingResult
       }
@@ -151,12 +162,12 @@ export class GHCIDebug {
       let potentialTempVar: string | undefined
       do {
         potentialTempVar = getExpression(
-          await this.run(`:print temp${tempVarNum}`, false, false, false), `temp${tempVarNum}`)
+          await this.run(`:print temp${tempVarNum}`, false, false, false))
         tempVarNum += 1
       } while (potentialTempVar !== undefined)
 
       await this.run(`let temp${tempVarNum} = ${expression}`, false, false, false)
-      return getExpression(await this.run(`:print temp${tempVarNum}`, false, false, false), `temp${tempVarNum}`)
+      return getExpression(await this.run(`:print temp${tempVarNum}`, false, false, false))
     } finally {
       this.ignoreErrors = false
     }
@@ -265,13 +276,13 @@ export class GHCIDebug {
         shiftAndRunCommand()
       }
     })
-    p.then (() => {
+    p.then(() => {
       if (this.commands.length !== 0) {
         shiftAndRunCommand()
       }
     }).catch((e: Error) => {
       atom.notifications.addError('An error happened', {
-        detail: e,
+        detail: e.toString(),
         stack: e.stack,
         dismissable: true,
       })
@@ -369,8 +380,7 @@ export class GHCIDebug {
   }
 
   private onStderrReadable() {
-    // tslint:disable-next-line:no-unsafe-any
-    const stderrOutput: Buffer = this.stderr.read()
+    const stderrOutput = this.stderr.read() as string | Buffer | null
     if (!stderrOutput || this.ignoreErrors) {
       return // this is the end of the input stream
     }
@@ -389,8 +399,7 @@ export class GHCIDebug {
   }
 
   private onStdoutReadable() {
-    // tslint:disable-next-line:no-unsafe-any
-    const currentString = (this.stdout.read() || '').toString()
+    const currentString = (this.stdout.read() as string | Buffer | null || '').toString()
 
     this.currentCommandBuffer += currentString
 

@@ -3,9 +3,7 @@
   "version": "0.3.4",
   "description": "Implements a graphical haskell debugger in atom, using ghci.",
   "main": "lib/main.js",
-  "scripts": {
-    "test": "jasmine"
-  },
+  "atomTestRunner": "./spec/runner.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/atom-haskell/haskell-debug.git"
@@ -29,16 +27,21 @@
   },
   "dependencies": {
     "atom-select-list": "^0.7.0",
-    "draggable": "^4.0.4",
-    "lodash": "^4.15.0"
+    "draggable": "^4.1.2",
+    "lodash": "^4.17.4",
+    "tslib": "^1.8.1"
   },
   "devDependencies": {
-    "@types/jasmine": "^2.5.41",
-    "@types/lodash": "^4.14.52",
+    "@types/atom": "^1.23.0",
+    "@types/chai": "^4.0.10",
+    "@types/lodash": "^4.14.91",
+    "@types/mocha": "^2.2.45",
     "atom-haskell-tslint-rules": "^0.1.1",
-    "jasmine": "^2.4.1",
-    "tslint": "^5.6.0",
-    "typescript": "^2.4.1"
+    "atom-mocha-test-runner": "^1.2.0",
+    "chai": "^4.1.2",
+    "ts-node": "^4.1.0",
+    "tslint": "^5.8.0",
+    "typescript": "^2.6.2"
   },
   "engines": {
     "atom": ">=1.19.0 <2.0.0"

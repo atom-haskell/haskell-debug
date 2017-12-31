@@ -32,7 +32,7 @@ function onData(data: string) {
   const newLinePos = data.indexOf('\n')
   if (newLinePos !== -1) {
     totalData += data.slice(0, newLinePos)
-    onMessage(JSON.parse(totalData))
+    onMessage(JSON.parse(totalData) as Message)
     totalData = ''
     onData(data.slice(newLinePos + 1))
   } else {

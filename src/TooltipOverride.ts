@@ -1,8 +1,11 @@
+import * as AtomTypes from 'atom'
+import * as UPI from 'atom-haskell-upi'
+
 export class TooltipOverride {
   constructor(private resolveExpression: (expression: string) => Promise<string | undefined>) {
   }
 
-  public async tooltipHandler(editor: AtomTypes.TextEditor, crange: AtomTypes.Range, type: UPI.TEventRangeType)
+  public async tooltipHandler(editor: AtomTypes.TextEditor, crange: AtomTypes.Range)
     : Promise<UPI.ITooltipData | undefined> {
     let range: AtomTypes.Range | undefined = crange
     if (range.isEmpty()) {

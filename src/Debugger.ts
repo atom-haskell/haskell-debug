@@ -1,5 +1,5 @@
 import * as atomAPI from 'atom'
-import { GHCIDebug, BreakInfo, ExceptionInfo } from './GHCIDebug'
+import { GHCIDebug, BreakInfo, ExceptionInfo, Breakpoint, ExceptionBreakLevels } from './GHCIDebug'
 import { DebugView } from './views/DebugView'
 import { CurrentVariablesView } from './views/CurrentVariablesView'
 import { HistoryState } from './HistoryState'
@@ -216,6 +216,7 @@ export class Debugger {
     this.debugView.disableAllDebugButtons()
 
     const fileToDebug = this.editor.getPath()
+    if (!fileToDebug) throw new Error('Trying to debug on a text editor with no filename')
     this.ghciDebug.loadModule(fileToDebug)
 
     breakpoints.forEach((ob) => {
@@ -231,6 +232,7 @@ export class Debugger {
 
   private getWorkingFolder() {
     const fileToDebug = this.editor.getPath()
+    if (!fileToDebug) throw new Error('Trying to debug on a text editor with no filename')
     return path.dirname(fileToDebug)
   }
 }

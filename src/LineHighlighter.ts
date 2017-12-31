@@ -31,7 +31,7 @@ export class LineHighlighter {
         class: 'highlight-green',
       })
     } else {
-      this.debugLineMarker.setBufferRange(info.range, {})
+      this.debugLineMarker.setBufferRange(info.range)
     }
   }
 

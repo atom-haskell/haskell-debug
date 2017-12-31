@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "es6",
+        "target": "es5",
         "module": "commonjs",
         "moduleResolution": "node",
         "isolatedModules": false,
@@ -14,23 +14,13 @@
         "noLib": false,
         "preserveConstEnums": true,
         "suppressImplicitAnyIndexErrors": true,
-        "outDir": "",
-        "inlineSources": true,
-        "inlineSourceMap": true,
+        "outDir": "../bin",
         "strictNullChecks": true,
         "allowJs": false,
-        "lib":["dom","es2017"],
         "strict": true
     },
     "include": [
-        "src/**/*.ts",
-        "src/**/*.tsx",
-        "typings/*.d.ts",
-        "oldTypings/*.d.ts"
-    ],
-    "exclude": [
-        "typings/etch.d.ts",
-        "src/bin"
+        "*.ts"
     ],
     "compileOnSave": true
 }

@@ -1,5 +1,6 @@
 import atomAPI = require('atom')
 import _ = require('lodash')
+import { Breakpoint } from './GHCIDebug'
 
 export class BreakpointUI {
   private _breakpoints: Breakpoint[] = []
@@ -34,6 +35,7 @@ export class BreakpointUI {
   public attachToNewTextEditor(te: atomAPI.TextEditor) {
     // patch the text editor to add breakpoints on click
     const lineNumbersModal = te.gutterWithName('line-number')
+    if (!lineNumbersModal) throw new Error('No line-number gutter on editor')
     const view = atom.views.getView(lineNumbersModal) as HTMLElement
 
     view.addEventListener('click', (ev) => {
@@ -42,7 +44,6 @@ export class BreakpointUI {
         && atom.config.get('haskell-debug.clickGutterToToggleBreakpoint')) {
         const bufferRow = (ev.target as HTMLElement).dataset.bufferRow
         if (bufferRow === undefined) {
-          // tslint:disable-next-line: no-console
           console.warn("haskell-debug: click on gutter doesn't have a buffer row property")
           return
         }
