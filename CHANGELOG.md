@@ -1,3 +1,8 @@
+## 0.3.5
+* Fix temp variable assignment (under certain circumstances, temporary variables used in expression evaluation could be overwritten)
+* Bump dependencies and a bit of housekeeping
+* Update copyright information
+
 ## 0.3.4
 * Support breakpoints in non-main modules (@DavidEichamnn)
 * :art: Code cleanup
