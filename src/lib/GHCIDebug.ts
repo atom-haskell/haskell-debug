@@ -1,8 +1,9 @@
-import cp = require('child_process')
-import stream = require('stream')
 import os = require('os')
-import path = require('path')
 import atomAPI = require('atom')
+import * as ahu from 'atom-haskell-utils'
+import { InteractiveProcess, IRequestResult } from './interactive-process'
+import { EOL } from 'os'
+import { TextBuffer } from 'atom'
 
 export interface BreakInfo {
   filename: string
@@ -14,13 +15,6 @@ export interface BreakInfo {
 export interface ExceptionInfo {
   historyLength: number
   localBindings: string[]
-}
-
-interface Command {
-  text: string
-  emitCommandOutput: boolean
-  fulfilWithPrompt: boolean
-  onFinish: (output: string) => any
 }
 
 export interface Breakpoint {
@@ -48,36 +42,17 @@ export class GHCIDebug {
   // tslint:disable-next-line: member-ordering
   public readonly on = this.emitter.on.bind(this.emitter)
 
-  private ghciCmd: cp.ChildProcess
-  private stdout: stream.Readable
-  private stdin: stream.Writable
-  private stderr: stream.Readable
-  private startText: Promise<string>
-  private ignoreErrors = false
-  private currentStderrOutput = ''
-  private currentCommandBuffer = ''
-  private commands = [] as Command[]
-  private currentCommand?: Command
-  private commandFinishedString = 'command_finish_o4uB1whagteqE8xBq9oq'
+  private process?: InteractiveProcess
+  private readyPromise: Promise<IRequestResult>
   private moduleNameByPath: Map<string, string> = new Map()
 
-  constructor(ghciCommand = 'ghci', ghciArgs: string[] = [], folder?: string) {
-
-    this.ghciCmd = cp.spawn(ghciCommand, ghciArgs, { cwd: folder, shell: true })
-
-    this.ghciCmd.on('exit', () => {
-      this.emitter.emit('debug-finished', undefined)
-    })
-
-    this.stdout = this.ghciCmd.stdout
-    this.stdin = this.ghciCmd.stdin
-    this.stderr = this.ghciCmd.stderr
-    this.stdout.on('readable', () => this.onStdoutReadable())
-    this.stderr.on('readable', () => this.onStderrReadable())
-
+  constructor(ghciCommand = 'ghci', ghciArgs: string[] = [], buffer: TextBuffer) {
     this.addReadyEvent()
+    this.readyPromise = this.init(ghciCommand, ghciArgs, buffer)
 
-    this.startText = this.run(`:set prompt "%s> ${this.commandFinishedString}"`, false, false, false, true)
+    this.readyPromise.then((response) => {
+      console.warn(response.stderr.join(EOL))
+    })
   }
 
   public destroy() {
@@ -85,22 +60,19 @@ export class GHCIDebug {
   }
 
   public async loadModule(name: string) {
-    const cwd = path.dirname(name)
-
-    await this.run(`:cd ${cwd}`)
     await this.run(`:load ${name}`)
   }
 
   public async setExceptionBreakLevel(level: ExceptionBreakLevels) {
-    await this.run(':unset -fbreak-on-exception')
-    await this.run(':unset -fbreak-on-error')
+    await this.run(':unset -fbreak-on-exception', false, false, false, false)
+    await this.run(':unset -fbreak-on-error', false, false, false, false)
 
     switch (level) {
       case 'exceptions':
-        await this.run(':set -fbreak-on-exception')
+        await this.run(':set -fbreak-on-exception', false, false, false, false)
         break
       case 'errors':
-        await this.run(':set -fbreak-on-error')
+        await this.run(':set -fbreak-on-error', false, false, false, false)
         break
       case 'none': // no-op
         break
@@ -146,31 +118,26 @@ export class GHCIDebug {
       return matchResult[1]
     }
 
-    // for the code below, ignore errors
-    this.ignoreErrors = true
+    // TODO: for the code below, ignore errors
 
-    try {
-      // try printing expression
-      const printingResult = getExpression(
-        await this.run(`:print ${expression}`, false, false, false))
-      if (printingResult !== undefined) {
-        return printingResult
-      }
-
-      // if that fails assign it to a temporary variable and evaluate that
-      let tempVarNum = 0
-      let potentialTempVar: string | undefined
-      do {
-        tempVarNum += 1
-        potentialTempVar = getExpression(
-          await this.run(`:print temp${tempVarNum}`, false, false, false))
-      } while (potentialTempVar !== undefined)
-
-      await this.run(`let temp${tempVarNum} = ${expression}`, false, false, false)
-      return getExpression(await this.run(`:print temp${tempVarNum}`, false, false, false))
-    } finally {
-      this.ignoreErrors = false
+    // try printing expression
+    const printingResult = getExpression(
+      await this.run(`:print ${expression}`, false, false, false, false))
+    if (printingResult !== undefined) {
+      return printingResult
     }
+
+    // if that fails assign it to a temporary variable and evaluate that
+    let tempVarNum = 0
+    let potentialTempVar: string | undefined
+    do {
+      tempVarNum += 1
+      potentialTempVar = getExpression(
+        await this.run(`:print temp${tempVarNum}`, false, false, false, false))
+    } while (potentialTempVar !== undefined)
+
+    await this.run(`let temp${tempVarNum} = ${expression}`, false, false, false, false)
+    return getExpression(await this.run(`:print temp${tempVarNum}`, false, false, false, false))
   }
 
   public forward() {
@@ -189,7 +156,7 @@ export class GHCIDebug {
     this.run(':quit')
     setTimeout(
       () => {
-        this.ghciCmd.kill()
+        this.process && this.process.destroy()
       },
       3000)
   }
@@ -199,10 +166,7 @@ export class GHCIDebug {
   }
 
   public async addedAllListeners() {
-    return this.startText.then((text) => {
-      const firstPrompt = text.indexOf('> ')
-      this.emitter.emit('console-output', text.slice(0, firstPrompt + 2))
-    })
+    return this.readyPromise
   }
 
   public async startDebug(moduleName?: string) {
@@ -215,91 +179,76 @@ export class GHCIDebug {
     emitStatusChanges: boolean = false,
     emitHistoryLength: boolean = false,
     emitCommandOutput: boolean = true,
-    fulfilWithPrompt: boolean = false,
+    emitErrors: boolean = true,
   ): Promise<string> {
-    const shiftAndRunCommand = () => {
-      const command = this.commands.shift()
+    await this.readyPromise
+    if (!this.process) throw new Error('No interactive process')
+    let prompt = ''
+    let tail = ''
 
-      this.currentCommand = command
-
-      if (command) {
-        if (command.emitCommandOutput) {
-          this.emitter.emit('command-issued', command.text)
-        }
-
-        this.stdin.write(command.text + os.EOL)
+    const response = await this.process.request(commandText + EOL, (arg) => {
+      if (arg.type === 'stdin') {
+        if (emitCommandOutput) this.emitter.emit('command-issued', arg.line)
+      } else if (arg.type === 'prompt') {
+        tail = arg.prompt[1]
+        prompt = arg.prompt[2]
+        if (emitCommandOutput) this.emitter.emit('console-output', `${tail}${prompt}> `)
+      } else if (arg.type === 'stdout') {
+        if (emitCommandOutput) this.emitter.emit('console-output', arg.line + EOL)
+      } else if (arg.type === 'stderr') {
+        if (emitErrors) this.emitter.emit('error', arg.line + EOL)
       }
+    })
+
+    const result = response.stdout
+    const err = response.stderr
+
+    if (tail) result.push(tail)
+
+    if (emitErrors && err.length) this.emitter.emit('error-completed', err.join(EOL))
+
+    if (emitStatusChanges) {
+      await this.emitStatusChanges(
+        prompt,
+        result.join(EOL),
+        emitHistoryLength,
+      )
     }
+    return result.join(EOL)
+  }
 
-    const p = new Promise<string>((fulfil) => {
-      const command: Command = {
-        text: commandText,
-        emitCommandOutput,
-        fulfilWithPrompt,
-        onFinish: async (output) => {
-          this.currentCommand = undefined
+  private async init(ghciCommand = 'ghci', ghciArgs: string[] = [], buffer: TextBuffer) {
+    const cwd = (await ahu.getRootDir(buffer)).getPath()
+    this.process = new InteractiveProcess(
+      ghciCommand, ghciArgs,
+      () => { this.emitter.emit('debug-finished', undefined) },
+      { cwd, shell: true },
+      /^(.*)#~IDEHASKELLREPL~(.*)~#$/,
+    )
 
-          function _fulfil(noPrompt: string) {
-            if (fulfilWithPrompt) {
-              fulfil(output)
-            } else {
-              fulfil(noPrompt)
-            }
-          }
-
-          const lastEndOfLinePos = output.lastIndexOf(os.EOL)
-
-          if (lastEndOfLinePos === -1) {
-            /*i.e. no output has been produced*/
-            if (emitStatusChanges) {
-              await this.emitStatusChanges(output, '', emitHistoryLength)
-            }
-            _fulfil('')
-          } else {
-            const promptBeginPosition = lastEndOfLinePos + os.EOL.length
-
-            if (emitStatusChanges) {
-              await this.emitStatusChanges(
-                output.slice(promptBeginPosition, output.length),
-                output.slice(0, lastEndOfLinePos),
-                emitHistoryLength,
-              )
-            }
-            _fulfil(output.slice(0, lastEndOfLinePos))
-          }
-        },
-      }
-
-      this.commands.push(command)
-
-      if (this.currentCommand === undefined) {
-        shiftAndRunCommand()
-      }
-    })
-    p.then(() => {
-      if (this.commands.length !== 0) {
-        shiftAndRunCommand()
-      }
-    }).catch((e: Error) => {
-      atom.notifications.addError('An error happened', {
-        detail: e.toString(),
-        stack: e.stack,
-        dismissable: true,
-      })
-    })
-    return p
+    return this.process.request(
+      `:set prompt2 \"\"${EOL}` +
+      `:set prompt-cont \"\"${EOL}` +
+      `:set prompt \"#~IDEHASKELLREPL~%s~#\\n\"${EOL}`,
+      (arg) => {
+        // tslint:disable-next-line:totality-check
+        if (arg.type === 'stdout') {
+          this.emitter.emit('console-output', arg.line + EOL)
+        // tslint:disable-next-line:totality-check
+        } else if (arg.type === 'stderr') {
+          this.emitter.emit('error', arg.line + EOL)
+        // tslint:disable-next-line:totality-check
+        } else if (arg.type === 'prompt') {
+          this.emitter.emit('console-output', `${arg.prompt[1]}${arg.prompt[2]}> `)
+        }
+      },
+    )
   }
 
   private addReadyEvent() {
-    const eventSubs = [
-      'paused-on-exception',
-      'line-changed',
-      'debug-finished',
-    ]
-
-    for (const eventName of eventSubs) {
-      (this.emitter.on as any)(eventName, () => this.emitter.emit('ready', undefined))
-    }
+    this.emitter.on('paused-on-exception', () => this.emitter.emit('ready', undefined))
+    this.emitter.on('line-changed', () => this.emitter.emit('ready', undefined))
+    this.emitter.on('debug-finished', () => this.emitter.emit('ready', undefined))
   }
 
   private async getBindings() {
@@ -325,24 +274,24 @@ export class GHCIDebug {
 
   private parsePrompt(stdOutput: string): BreakInfo | Symbol {
     const patterns = [{
-      pattern: /\[(?:[-\d]*: )?(.*):\((\d+),(\d+)\)-\((\d+),(\d+)\).*\].*> $/,
+      pattern: /^\[(?:[-\d]*: )?(.*):\((\d+),(\d+)\)-\((\d+),(\d+)\).*\].*$/,
       func: (match) => ({
         filename: match[1],
         range: [[parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
         [parseInt(match[4], 10), parseInt(match[5], 10)]],
       }),
     }, {
-      pattern: /\[(?:[-\d]*: )?(.*):(\d*):(\d*)-(\d*)\].*> $/,
+      pattern: /^\[(?:[-\d]*: )?(.*):(\d*):(\d*)-(\d*)\].*$/,
       func: (match) => ({
         filename: match[1],
         range: [[parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
         [parseInt(match[2], 10) - 1, parseInt(match[4], 10)]],
       }),
     }, {
-      pattern: /\[<exception thrown>\].*> $/,
+      pattern: /^\[<exception thrown>\].*$/,
       func: () => GHCIDebug.pausedOnError,
     }, {
-      pattern: /.*> $/,
+      pattern: /^.*$/,
       func: () => GHCIDebug.finishedDebugging,
     }] as Array<{ pattern: RegExp; func: (match: string[]) => BreakInfo | Symbol }>
     for (const pattern of patterns) {
@@ -376,49 +325,6 @@ export class GHCIDebug {
       }
 
       this.emitter.emit('line-changed', breakInfo)
-    }
-  }
-
-  private onStderrReadable() {
-    const stderrOutput = this.stderr.read() as string | Buffer | null
-    if (!stderrOutput || this.ignoreErrors) {
-      return // this is the end of the input stream
-    }
-
-    this.emitter.emit('error', stderrOutput.toString())
-
-    if (this.currentStderrOutput === '') {
-      const disp = this.emitter.on('ready', () => {
-        this.emitter.emit('error-completed', this.currentStderrOutput)
-        this.currentStderrOutput = ''
-        disp.dispose()
-      })
-    }
-
-    this.currentStderrOutput += stderrOutput.toString()
-  }
-
-  private onStdoutReadable() {
-    const currentString = (this.stdout.read() as string | Buffer | null || '').toString()
-
-    this.currentCommandBuffer += currentString
-
-    const finishStringPosition = this.currentCommandBuffer.search(this.commandFinishedString)
-    if (finishStringPosition !== -1) {
-      const outputString = this.currentCommandBuffer.slice(0, finishStringPosition)
-
-      if (this.currentCommand) {
-        if (this.currentCommand.emitCommandOutput) {
-          this.emitter.emit('console-output', outputString)
-        }
-
-        this.currentCommand.onFinish(outputString)
-      }
-
-      // Take the finished string off the buffer and process the next ouput
-      this.currentCommandBuffer = this.currentCommandBuffer.slice(
-        finishStringPosition + this.commandFinishedString.length)
-      this.onStdoutReadable()
     }
   }
 

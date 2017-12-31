@@ -26,9 +26,12 @@
     }
   },
   "dependencies": {
+    "atom-haskell-utils": "^1.0.1",
     "atom-select-list": "^0.7.0",
     "draggable": "^4.1.2",
     "lodash": "^4.17.4",
+    "promise-queue": "^2.2.3",
+    "tree-kill": "^1.2.0",
     "tslib": "^1.8.1"
   },
   "devDependencies": {

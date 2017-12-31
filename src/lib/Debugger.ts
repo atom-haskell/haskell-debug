@@ -5,11 +5,10 @@ import { CurrentVariablesView } from './views/CurrentVariablesView'
 import { HistoryState } from './HistoryState'
 import { LineHighlighter } from './LineHighlighter'
 import { TerminalReporter } from './TerminalReporter'
-import path = require('path')
 
 export class Debugger {
   private readonly lineHighlighter = new LineHighlighter()
-  private readonly ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.getWorkingFolder())
+  private readonly ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.editor.getBuffer())
   private readonly debugView = new DebugView()
   private readonly historyState = new HistoryState()
   // tslint:disable-next-line: no-uninitialized
@@ -228,11 +227,5 @@ export class Debugger {
     })
 
     this.ghciDebug.startDebug(atom.config.get('haskell-debug.functionToDebug'))
-  }
-
-  private getWorkingFolder() {
-    const fileToDebug = this.editor.getPath()
-    if (!fileToDebug) throw new Error('Trying to debug on a text editor with no filename')
-    return path.dirname(fileToDebug)
   }
 }
