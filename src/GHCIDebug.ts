@@ -161,9 +161,9 @@ export class GHCIDebug {
       let tempVarNum = 0
       let potentialTempVar: string | undefined
       do {
+        tempVarNum += 1
         potentialTempVar = getExpression(
           await this.run(`:print temp${tempVarNum}`, false, false, false))
-        tempVarNum += 1
       } while (potentialTempVar !== undefined)
 
       await this.run(`let temp${tempVarNum} = ${expression}`, false, false, false)
