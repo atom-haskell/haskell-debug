@@ -3,7 +3,6 @@ import atomAPI = require('atom')
 import * as ahu from 'atom-haskell-utils'
 import { InteractiveProcess, IRequestResult } from './interactive-process'
 import { EOL } from 'os'
-import { TextBuffer } from 'atom'
 
 export interface BreakInfo {
   filename: string
@@ -46,9 +45,9 @@ export class GHCIDebug {
   private readyPromise: Promise<IRequestResult>
   private moduleNameByPath: Map<string, string> = new Map()
 
-  constructor(ghciCommand = 'ghci', ghciArgs: string[] = [], buffer: TextBuffer) {
+  constructor(ghciCommand = 'ghci', ghciArgs: string[] = [], bufferPath?: string) {
     this.addReadyEvent()
-    this.readyPromise = this.init(ghciCommand, ghciArgs, buffer)
+    this.readyPromise = this.init(ghciCommand, ghciArgs, bufferPath)
 
     this.readyPromise.then((response) => {
       console.warn(response.stderr.join(EOL))
@@ -217,8 +216,9 @@ export class GHCIDebug {
     return result.join(EOL)
   }
 
-  private async init(ghciCommand = 'ghci', ghciArgs: string[] = [], buffer: TextBuffer) {
-    const cwd = (await ahu.getRootDir(buffer)).getPath()
+  private async init(ghciCommand = 'ghci', ghciArgs: string[] = [], bufferPath?: string) {
+    // tslint:disable-next-line:no-null-keyword
+    const cwd = (await ahu.getRootDir(bufferPath || null)).getPath()
     this.process = new InteractiveProcess(
       ghciCommand, ghciArgs,
       () => { this.emitter.emit('debug-finished', undefined) },

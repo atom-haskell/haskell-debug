@@ -8,7 +8,7 @@ import { TerminalReporter } from './TerminalReporter'
 
 export class Debugger {
   private readonly lineHighlighter = new LineHighlighter()
-  private readonly ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.editor.getBuffer())
+  private readonly ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.editor.getPath())
   private readonly debugView = new DebugView()
   private readonly historyState = new HistoryState()
   // tslint:disable-next-line: no-uninitialized
