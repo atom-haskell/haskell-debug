@@ -2,22 +2,8 @@
 * Simplify terminal-echo
 * Remove unused terminal-reporter message
 * Rewrite GHCI interface code to use interactive-process
-* Update CHANGELOG
-* Source tree reshuffle
-* Unfocus spec
 * Fix temp variable assignment
 * Bump dependencies and a bit of housekeeping
-* Update README formatting
-* Add license information to README
-* Update copyright information
-* Bump dependencies
-* Added david-dm badge
-* Update typings
-* General updates, minor fixes
-* Update typings
-* Update typings
-* Typed config
-* Update typings
 
 ## 0.3.4
 * Support breakpoints in non-main modules (@DavidEichamnn)
