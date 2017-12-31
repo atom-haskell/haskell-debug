@@ -49,7 +49,4 @@ function onMessage(message) {
     else if (message.type === 'close') {
         process.exit();
     }
-    else if (message.type === 'user-input') {
-        rl.prompt();
-    }
 }

@@ -58,12 +58,6 @@ export class TerminalReporter {
     this.server.close()
   }
 
-  public prompt() {
-    this.send({
-      type: 'user-input',
-    })
-  }
-
   public write(output: string) {
     this.send({
       type: 'message',

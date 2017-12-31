@@ -51,7 +51,5 @@ function onMessage(message: Message) {
     rl.close()
   } else if (message.type === 'close') {
     process.exit()
-  } else if (message.type === 'user-input') {
-    rl.prompt()
   }
 }
