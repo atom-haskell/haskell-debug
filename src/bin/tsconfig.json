@@ -14,7 +14,7 @@
         "noLib": false,
         "preserveConstEnums": true,
         "suppressImplicitAnyIndexErrors": true,
-        "outDir": "../bin",
+        "outDir": "../../bin",
         "strictNullChecks": true,
         "allowJs": false,
         "strict": true

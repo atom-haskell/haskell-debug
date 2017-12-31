@@ -1,4 +1,4 @@
-import GHCIDebug = require('../src/GHCIDebug')
+import GHCIDebug = require('../src/lib/GHCIDebug')
 import path = require('path')
 import { expect } from 'chai'
 

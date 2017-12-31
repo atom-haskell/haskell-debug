@@ -1,6 +1,6 @@
 {
   "compileOnSave": false,
-  "extends": "../src/tsconfig.json",
+  "extends": "../src/lib/tsconfig.json",
   "include": [ "**.ts" ],
   "compilerOptions": {
     "types": [ "mocha", "chai" ]

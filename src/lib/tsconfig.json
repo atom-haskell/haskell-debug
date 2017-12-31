@@ -14,7 +14,7 @@
         "noLib": false,
         "preserveConstEnums": true,
         "suppressImplicitAnyIndexErrors": true,
-        "outDir": "../lib",
+        "outDir": "../../lib",
         "inlineSources": true,
         "inlineSourceMap": true,
         "strictNullChecks": true,
@@ -27,8 +27,8 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "typeRoots" : [
-          "../typings",
-          "../node_modules/@types"
+          "../../typings",
+          "../../node_modules/@types"
         ],
         "types" : [
           "node",
@@ -46,7 +46,7 @@
         "**.ts",
         "**.tsx",
         "**.js",
-        "../oldTypings/*.d.ts"
+        "./oldTypings/*.d.ts"
     ],
     "compileOnSave": true,
     "experimentalDecorators": true
