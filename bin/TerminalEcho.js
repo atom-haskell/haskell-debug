@@ -10,38 +10,26 @@ var client = net.connect(connectionPath);
 var rl = readline.createInterface({
     input: process.stdin,
 });
-var ignoreOutput = false;
 rl.on('line', function (text) {
-    if (ignoreOutput) {
-        ignoreOutput = false;
-        return;
-    }
     client.write(text + '\n');
 });
-var totalData = '';
+var totalData = [];
 client.on('data', function (data) {
     onData(data.toString());
 });
 function onData(data) {
-    var newLinePos = data.indexOf('\n');
-    if (newLinePos !== -1) {
-        totalData += data.slice(0, newLinePos);
-        onMessage(JSON.parse(totalData));
-        totalData = '';
-        onData(data.slice(newLinePos + 1));
-    }
-    else {
-        totalData += data;
-    }
+    totalData.push(data);
+    var packets = totalData.join('').split('\n');
+    var last = packets.pop();
+    totalData = last ? [last] : [];
+    packets.forEach(function (packet) { return onMessage(JSON.parse(packet)); });
 }
 function onMessage(message) {
     if (message.type === 'message') {
         process.stdout.write(message.content);
     }
     else if (message.type === 'display-command') {
-        process.stdout.write(message.command + '\n');
-        ignoreOutput = true;
-        rl.write('\n');
+        process.stdout.write(message.command);
     }
     else if (message.type === 'destroy-prompt') {
         rl.close();

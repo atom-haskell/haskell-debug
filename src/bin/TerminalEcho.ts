@@ -13,40 +13,28 @@ const rl = readline.createInterface({
   input: process.stdin,
 })
 
-let ignoreOutput = false
-
 rl.on('line', (text: string) => {
-  if (ignoreOutput) {
-    ignoreOutput = false
-    return
-  }
   client.write(text + '\n')
 })
 
-let totalData = ''
+let totalData: string[] = []
 client.on('data', (data: Buffer) => {
   onData(data.toString())
 })
 
 function onData(data: string) {
-  const newLinePos = data.indexOf('\n')
-  if (newLinePos !== -1) {
-    totalData += data.slice(0, newLinePos)
-    onMessage(JSON.parse(totalData) as Message)
-    totalData = ''
-    onData(data.slice(newLinePos + 1))
-  } else {
-    totalData += data
-  }
+  totalData.push(data)
+  const packets = totalData.join('').split('\n')
+  const last = packets.pop()
+  totalData = last ? [last] : []
+  packets.forEach((packet) => onMessage(JSON.parse(packet) as Message))
 }
 
 function onMessage(message: Message) {
   if (message.type === 'message') {
     process.stdout.write(message.content)
   } else if (message.type === 'display-command') {
-    process.stdout.write(message.command + '\n')
-    ignoreOutput = true
-    rl.write('\n')
+    process.stdout.write(message.command)
   } else if (message.type === 'destroy-prompt') {
     rl.close()
   } else if (message.type === 'close') {
