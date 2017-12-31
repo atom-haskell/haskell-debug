@@ -31,7 +31,7 @@ To break on exceptions, launch the command palette, type in `set break on except
 
 # License
 
-Copyright © 2016 Thomas Hickman
+Copyright © 2016 Thomas Hickman \
 Copyright © 2017 Atom-Haskell
 
 Contributors (by number of commits):
