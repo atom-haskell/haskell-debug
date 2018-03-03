@@ -4,7 +4,6 @@ import tkill = require('tree-kill')
 import { EOL } from 'os'
 
 type ExitCallback = (exitCode: number) => void
-
 ;(Symbol as any).asyncIterator =
   Symbol.asyncIterator || Symbol.for('Symbol.asyncIterator')
 
@@ -163,8 +162,8 @@ export class InteractiveProcess {
     let buffer = ''
     while (!isEnded()) {
       const read = out.read()
+      // tslint:disable-next-line: no-null-keyword strict-type-predicates
       if (read != null) {
-        // tslint:disable-line: no-null-keyword strict-type-predicates
         buffer += read
         if (buffer.match(EOL)) {
           const arr = buffer.split(EOL)

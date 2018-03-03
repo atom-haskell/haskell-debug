@@ -4,8 +4,9 @@ var net = require("net");
 var os = require("os");
 var readline = require("readline");
 var PIPE_NAME = 'haskell-debug';
-var connectionPath = os.platform() === 'win32' ?
-    '\\\\.\\pipe\\' + PIPE_NAME : "/tmp/" + PIPE_NAME + ".sock";
+var connectionPath = os.platform() === 'win32'
+    ? '\\\\.\\pipe\\' + PIPE_NAME
+    : "/tmp/" + PIPE_NAME + ".sock";
 var client = net.connect(connectionPath);
 var rl = readline.createInterface({
     input: process.stdin,

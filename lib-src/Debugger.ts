@@ -241,8 +241,9 @@ export class Debugger {
     this.debugView.disableAllDebugButtons()
 
     const fileToDebug = this.editor.getPath()
-    if (!fileToDebug)
+    if (!fileToDebug) {
       throw new Error('Trying to debug on a text editor with no filename')
+    }
     this.ghciDebug.loadModule(fileToDebug)
 
     breakpoints.forEach((ob) => {

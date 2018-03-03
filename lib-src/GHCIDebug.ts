@@ -213,11 +213,13 @@ export class GHCIDebug {
       } else if (arg.type === 'prompt') {
         tail = arg.prompt[1]
         prompt = arg.prompt[2]
-        if (emitCommandOutput)
+        if (emitCommandOutput) {
           this.emitter.emit('console-output', `${tail}${prompt}> `)
+        }
       } else if (arg.type === 'stdout') {
-        if (emitCommandOutput)
+        if (emitCommandOutput) {
           this.emitter.emit('console-output', arg.line + EOL)
+        }
       } else if (arg.type === 'stderr') {
         if (emitErrors) this.emitter.emit('error', arg.line + EOL)
       }
@@ -228,8 +230,9 @@ export class GHCIDebug {
 
     if (tail) result.push(tail)
 
-    if (emitErrors && err.length)
+    if (emitErrors && err.length) {
       this.emitter.emit('error-completed', err.join(EOL))
+    }
 
     if (emitStatusChanges) {
       await this.emitStatusChanges(prompt, result.join(EOL), emitHistoryLength)
