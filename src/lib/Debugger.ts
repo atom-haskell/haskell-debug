@@ -11,10 +11,8 @@ export class Debugger {
   private readonly ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.editor.getPath())
   private readonly debugView = new DebugView()
   private readonly historyState = new HistoryState()
-  // tslint:disable-next-line: no-uninitialized
   private debugPanel: atomAPI.Panel<HTMLElement>
   private readonly currentVariablesView = new CurrentVariablesView()
-  // tslint:disable-next-line: no-uninitialized
   private currentVariablesPanel: atomAPI.Panel<HTMLElement>
   private readonly terminalReporter = new TerminalReporter()
   private readonly disposables = new atomAPI.CompositeDisposable()
@@ -27,7 +25,21 @@ export class Debugger {
     private ideCabalBuilderCommand?: string,
   ) {
     this.launchGHCIDebugAndConsole(breakpoints)
-    this.displayGUI()
+
+    this.debugPanel = atom.workspace.addTopPanel({
+      item: this.debugView.element,
+    })
+
+    this.debugView.on('step', () => this.step())
+    this.debugView.on('back', () => this.back())
+    this.debugView.on('forward', () => this.forward())
+    this.debugView.on('continue', () => this.continue())
+    this.debugView.on('stop', () => this.stop())
+
+    this.currentVariablesPanel = atom.workspace.addTopPanel({
+      item: this.currentVariablesView.element,
+    })
+
     this.disposables.add(atom.config.onDidChange('haskell-debug.breakOnException', ({ newValue }) => {
       this.ghciDebug.setExceptionBreakLevel(newValue as ExceptionBreakLevels)
     }))
@@ -119,22 +131,6 @@ export class Debugger {
     this.currentVariablesView.destroy()
     this.terminalReporter.destroy()
     this.disposables.dispose()
-  }
-
-  private displayGUI() {
-    this.debugPanel = atom.workspace.addTopPanel({
-      item: this.debugView.element,
-    })
-
-    this.debugView.on('step', () => this.step())
-    this.debugView.on('back', () => this.back())
-    this.debugView.on('forward', () => this.forward())
-    this.debugView.on('continue', () => this.continue())
-    this.debugView.on('stop', () => this.stop())
-
-    this.currentVariablesPanel = atom.workspace.addTopPanel({
-      item: this.currentVariablesView.element,
-    })
   }
 
   private updateHistoryLengthAndEnableButtons(historyLength?: number) {
