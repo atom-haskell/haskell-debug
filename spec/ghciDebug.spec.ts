@@ -3,6 +3,7 @@ import path = require('path')
 import { expect } from 'chai'
 
 describe('GHCIDebug', function() {
+  if (process.env.RUN_GHCI_SPEC === 'false') return
   let session: GHCIDebug.GHCIDebug
   async function wrapPromise<
     T extends { on: (arg: U, cb: (val: V) => void) => void },

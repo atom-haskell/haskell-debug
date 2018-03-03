@@ -16,6 +16,6 @@ describe('package', function() {
 
     await promise
 
-    expect(atom.packages.isPackageActive('haskell-ghc-mod')).to.be.true
+    expect(atom.packages.isPackageActive('haskell-debug')).to.be.true
   })
 })
