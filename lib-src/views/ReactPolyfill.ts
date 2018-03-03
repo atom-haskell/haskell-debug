@@ -1,7 +1,7 @@
 export function createElement(
   tagName: string,
-  attributes: null | {[index: string]: string},
-  ...extraElements: Array<HTMLElement | { toString: () => string }>,
+  attributes: null | { [index: string]: string },
+  ...extraElements: Array<HTMLElement | { toString: () => string }>
 ): JSX.Element {
   const element = document.createElement(tagName)
 

@@ -5,8 +5,10 @@ import { Message } from './message'
 
 const PIPE_NAME = 'haskell-debug'
 
-const connectionPath = os.platform() === 'win32' ?
-  '\\\\.\\pipe\\' + PIPE_NAME : `/tmp/${PIPE_NAME}.sock`
+const connectionPath =
+  os.platform() === 'win32'
+    ? '\\\\.\\pipe\\' + PIPE_NAME
+    : `/tmp/${PIPE_NAME}.sock`
 const client = net.connect(connectionPath)
 
 const rl = readline.createInterface({

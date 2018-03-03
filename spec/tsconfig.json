@@ -1,8 +1,8 @@
 {
   "compileOnSave": false,
-  "extends": "../src/lib/tsconfig.json",
-  "include": [ "**.ts" ],
+  "extends": "../lib-src/tsconfig.json",
+  "include": ["**.ts"],
   "compilerOptions": {
-    "types": [ "mocha", "chai" ]
+    "types": ["mocha", "chai", "promise-queue"]
   }
 }

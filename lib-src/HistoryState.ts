@@ -1,4 +1,3 @@
-
 export class HistoryState {
   private _maxPosition = 0
   private _backEnabled = true
@@ -23,8 +22,8 @@ export class HistoryState {
   }
 
   /**
-    * sets the current history position, returns false if newPosition is invalid
-  */
+   * sets the current history position, returns false if newPosition is invalid
+   */
   public setCurrentPosition(newPosition: number) {
     if (newPosition < 0 || newPosition > this._maxPosition) {
       return false

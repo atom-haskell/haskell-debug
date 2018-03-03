@@ -1,5 +1,11 @@
 import * as atomAPI from 'atom'
-import { GHCIDebug, BreakInfo, ExceptionInfo, Breakpoint, ExceptionBreakLevels } from './GHCIDebug'
+import {
+  GHCIDebug,
+  BreakInfo,
+  ExceptionInfo,
+  Breakpoint,
+  ExceptionBreakLevels,
+} from './GHCIDebug'
 import { DebugView } from './views/DebugView'
 import { CurrentVariablesView } from './views/CurrentVariablesView'
 import { HistoryState } from './HistoryState'
@@ -8,7 +14,11 @@ import { TerminalReporter } from './TerminalReporter'
 
 export class Debugger {
   private readonly lineHighlighter = new LineHighlighter()
-  private readonly ghciDebug = new GHCIDebug(this.getGhciCommand(), this.getGhciArgs(), this.editor.getPath())
+  private readonly ghciDebug = new GHCIDebug(
+    this.getGhciCommand(),
+    this.getGhciArgs(),
+    this.editor.getPath(),
+  )
   private readonly debugView = new DebugView()
   private readonly historyState = new HistoryState()
   private debugPanel: atomAPI.Panel<HTMLElement>
@@ -40,9 +50,16 @@ export class Debugger {
       item: this.currentVariablesView.element,
     })
 
-    this.disposables.add(atom.config.onDidChange('haskell-debug.breakOnException', ({ newValue }) => {
-      this.ghciDebug.setExceptionBreakLevel(newValue as ExceptionBreakLevels)
-    }))
+    this.disposables.add(
+      atom.config.onDidChange(
+        'haskell-debug.breakOnException',
+        ({ newValue }) => {
+          this.ghciDebug.setExceptionBreakLevel(
+            newValue as ExceptionBreakLevels,
+          )
+        },
+      ),
+    )
   }
 
   /** For the tooltip override*/
@@ -51,13 +68,21 @@ export class Debugger {
   }
 
   public back() {
-    if (this.historyState.setCurrentPosition(this.historyState.getCurrentPosition() + 1)) {
+    if (
+      this.historyState.setCurrentPosition(
+        this.historyState.getCurrentPosition() + 1,
+      )
+    ) {
       this.ghciDebug.back()
     }
   }
 
   public forward() {
-    if (this.historyState.setCurrentPosition(this.historyState.getCurrentPosition() - 1)) {
+    if (
+      this.historyState.setCurrentPosition(
+        this.historyState.getCurrentPosition() - 1,
+      )
+    ) {
       this.ghciDebug.forward()
     }
   }
@@ -113,12 +138,18 @@ export class Debugger {
       }
     }
 
-    if (ghciArgs.length > 0
-      && (this.ideCabalBuilderCommand === 'cabal'
-        || this.ideCabalBuilderCommand === 'stack')) {
-      return args.concat(`--ghc-options="${atom.config.get('haskell-debug.GHCIArguments')}"`)
+    if (
+      ghciArgs.length > 0 &&
+      (this.ideCabalBuilderCommand === 'cabal' ||
+        this.ideCabalBuilderCommand === 'stack')
+    ) {
+      return args.concat(
+        `--ghc-options="${atom.config.get('haskell-debug.GHCIArguments')}"`,
+      )
     } else {
-      return args.concat(atom.config.get('haskell-debug.GHCIArguments').split(' '))
+      return args.concat(
+        atom.config.get('haskell-debug.GHCIArguments').split(' '),
+      )
     }
   }
 
@@ -167,14 +198,11 @@ export class Debugger {
       }
 
       this.debuggerEnabled = false
-      setTimeout(
-        () => {
-          if (!this.debuggerEnabled) {
-            this.debugView.disableAllDebugButtons()
-          }
-        },
-        100,
-      )
+      setTimeout(() => {
+        if (!this.debuggerEnabled) {
+          this.debugView.disableAllDebugButtons()
+        }
+      }, 100)
     })
 
     this.ghciDebug.on('console-output', (output: string) => {
@@ -206,12 +234,15 @@ export class Debugger {
       this.ghciDebug.stop()
     })
 
-    this.ghciDebug.setExceptionBreakLevel(atom.config.get('haskell-debug.breakOnException'))
+    this.ghciDebug.setExceptionBreakLevel(
+      atom.config.get('haskell-debug.breakOnException'),
+    )
 
     this.debugView.disableAllDebugButtons()
 
     const fileToDebug = this.editor.getPath()
-    if (!fileToDebug) throw new Error('Trying to debug on a text editor with no filename')
+    if (!fileToDebug)
+      throw new Error('Trying to debug on a text editor with no filename')
     this.ghciDebug.loadModule(fileToDebug)
 
     breakpoints.forEach((ob) => {

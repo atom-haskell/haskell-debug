@@ -5,7 +5,8 @@ import { EOL } from 'os'
 
 type ExitCallback = (exitCode: number) => void
 
-(Symbol as any).asyncIterator = Symbol.asyncIterator || Symbol.for('Symbol.asyncIterator')
+;(Symbol as any).asyncIterator =
+  Symbol.asyncIterator || Symbol.for('Symbol.asyncIterator')
 
 export interface IRequestResult {
   stdout: string[]
@@ -27,7 +28,13 @@ export class InteractiveProcess {
   private process?: CP.ChildProcess
   private requestQueue: Queue
   private endPattern: RegExp
-  constructor (cmd: string, args: string[], onDidExit: ExitCallback, opts: CP.SpawnOptions, endPattern: RegExp) {
+  constructor(
+    cmd: string,
+    args: string[],
+    onDidExit: ExitCallback,
+    opts: CP.SpawnOptions,
+    endPattern: RegExp,
+  ) {
     this.endPattern = endPattern
     this.requestQueue = new Queue(1, 100)
 
@@ -56,8 +63,10 @@ export class InteractiveProcess {
     }
   }
 
-  public async request (
-    command: string, lineCallback?: TLineCallback, endPattern: RegExp = this.endPattern,
+  public async request(
+    command: string,
+    lineCallback?: TLineCallback,
+    endPattern: RegExp = this.endPattern,
   ): Promise<IRequestResult> {
     return this.requestQueue.add(async () => {
       if (!this.process) {
@@ -119,40 +128,43 @@ export class InteractiveProcess {
     })
   }
 
-  public destroy () {
+  public destroy() {
     if (this.process) {
       tkill(this.process.pid, 'SIGTERM')
     }
   }
 
-  public interrupt () {
+  public interrupt() {
     if (this.process) {
       tkill(this.process.pid, 'SIGINT')
     }
   }
 
-  public isBusy () {
+  public isBusy() {
     return this.requestQueue.getPendingLength() > 0
   }
 
-  public writeStdin (str: string) {
+  public writeStdin(str: string) {
     if (!this.process) {
       throw new Error('Interactive process is not running')
     }
     this.process.stdin.write(str)
   }
 
-  private async waitReadable (stream: NodeJS.ReadableStream) {
-    return new Promise((resolve) => stream.once('readable', () => {
-      resolve()
-    }))
+  private async waitReadable(stream: NodeJS.ReadableStream) {
+    return new Promise((resolve) =>
+      stream.once('readable', () => {
+        resolve()
+      }),
+    )
   }
 
-  private async *readgen (out: NodeJS.ReadableStream, isEnded: () => boolean) {
+  private async *readgen(out: NodeJS.ReadableStream, isEnded: () => boolean) {
     let buffer = ''
-    while (! isEnded()) {
+    while (!isEnded()) {
       const read = out.read()
-      if (read != null) { // tslint:disable-line: no-null-keyword strict-type-predicates
+      if (read != null) {
+        // tslint:disable-line: no-null-keyword strict-type-predicates
         buffer += read
         if (buffer.match(EOL)) {
           const arr = buffer.split(EOL)
@@ -163,6 +175,8 @@ export class InteractiveProcess {
         await this.waitReadable(out)
       }
     }
-    if (buffer) { out.unshift(buffer) }
+    if (buffer) {
+      out.unshift(buffer)
+    }
   }
 }

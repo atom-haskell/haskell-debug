@@ -8,7 +8,11 @@ export class CurrentVariablesView {
   private exceptionPanel: HTMLElement
 
   constructor() {
-    this.exceptionPanel = <span style="display: none" class="error-messages">(Paused on exception)</span>
+    this.exceptionPanel = (
+      <span style="display: none" class="error-messages">
+        (Paused on exception)
+      </span>
+    )
     this.list = <ul class="list-group" />
     this.element = (
       <atom-panel style="z-index: 10" class="padded">
@@ -17,9 +21,7 @@ export class CurrentVariablesView {
             <span>Local Variables </span>
             {this.exceptionPanel}
           </div>
-          <div class="panel-body padded">
-            {this.list}
-          </div>
+          <div class="panel-body padded">{this.list}</div>
         </div>
       </atom-panel>
     )
@@ -34,9 +36,7 @@ export class CurrentVariablesView {
       this.list.removeChild(this.list.firstChild)
     }
     for (const binding of localBindings) {
-      this.list.appendChild(
-        <li>{binding}</li>,
-      )
+      this.list.appendChild(<li>{binding}</li>)
     }
 
     if (isPausedOnException) {

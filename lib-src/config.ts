@@ -1,7 +1,10 @@
 import * as os from 'os'
 
-export const debugModes: Array<{value: 'none' | 'errors' | 'exceptions', description: string}> = [
-  { value: 'none', description: 'Don\'t pause on any exceptions' },
+export const debugModes: Array<{
+  value: 'none' | 'errors' | 'exceptions'
+  description: string
+}> = [
+  { value: 'none', description: "Don't pause on any exceptions" },
   { value: 'errors', description: 'Pause on errors (uncaught exceptions)' },
   { value: 'exceptions', description: 'Pause on exceptions' },
 ]
@@ -22,17 +25,19 @@ function getTerminalCommand() {
 export const config = {
   useIdeHaskellCabalBuilder: {
     title: 'Use ide-haskell-cabal builder',
-    description: "Use the ide-haskell-cabal builder's command when running ghci - " +
-    'will run `stack ghci` when stack is the builder, `cabal repl` for cabal and ' +
-    '`ghci` for none',
+    description:
+      "Use the ide-haskell-cabal builder's command when running ghci - " +
+      'will run `stack ghci` when stack is the builder, `cabal repl` for cabal and ' +
+      '`ghci` for none',
     default: true,
     type: 'boolean',
     order: 0,
   },
   GHCICommand: {
     title: 'GHCI Command',
-    description: 'The command to run to execute `ghci`, this will get ignore if the' +
-    ' previous setting is set to true',
+    description:
+      'The command to run to execute `ghci`, this will get ignore if the' +
+      ' previous setting is set to true',
     type: 'string',
     default: 'ghci',
     order: 1,
@@ -51,14 +56,16 @@ export const config = {
     order: 3,
   },
   terminalCommand: {
-    description: 'The command to run to launch a terminal, where the command launched in the terminal is `%s`.',
+    description:
+      'The command to run to launch a terminal, where the command launched in the terminal is `%s`.',
     type: 'string',
     default: getTerminalCommand(),
     order: 4,
   },
   clickGutterToToggleBreakpoint: {
     type: 'boolean',
-    description: 'Insert a breakpoint when the gutter is clicked in a haskell source file',
+    description:
+      'Insert a breakpoint when the gutter is clicked in a haskell source file',
     default: true,
     order: 5,
   },

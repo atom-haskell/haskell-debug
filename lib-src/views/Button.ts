@@ -3,7 +3,7 @@ import atomAPI = require('atom')
 export class Button {
   public element: HTMLElement
   private emitter: atomAPI.Emitter<{
-    'click': undefined
+    click: undefined
   }> = new atomAPI.Emitter()
   // tslint:disable-next-line: member-ordering
   public on = this.emitter.on.bind(this.emitter)

@@ -6,17 +6,15 @@ type ButtonTypes = 'step' | 'back' | 'forward' | 'continue' | 'stop'
 
 export class DebugView {
   public element: HTMLElement
-  private emitter: atomAPI.Emitter<{
-    [K in ButtonTypes]: undefined
-  }> = new atomAPI.Emitter()
+  private emitter: atomAPI.Emitter<
+    { [K in ButtonTypes]: undefined }
+  > = new atomAPI.Emitter()
   // tslint:disable-next-line: member-ordering
   public on = this.emitter.on.bind(this.emitter)
   private container: HTMLElement
   private draggable: Draggable
 
-  private buttons: {
-    [K in ButtonTypes]: Button
-  }
+  private buttons: { [K in ButtonTypes]: Button }
 
   constructor() {
     this.element = document.createElement('atom-panel')
@@ -40,7 +38,10 @@ export class DebugView {
       onDragStart: () => this.cancelButtonsClick(),
     })
 
-    this.draggable.set(atom.getSize().width / 2 - 87/*size of the element*/, 30)
+    this.draggable.set(
+      atom.getSize().width / 2 - 87 /*size of the element*/,
+      30,
+    )
   }
 
   public setButtonEnabled(type: ButtonTypes, enabled: boolean) {

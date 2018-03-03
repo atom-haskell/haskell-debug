@@ -20,12 +20,24 @@ let disposables: atomAPI.CompositeDisposable | undefined
 export type TECE = atomAPI.CommandEvent<atomAPI.TextEditorElement>
 
 const commands = {
-  'debug': async ({ currentTarget }: TECE) => {
-    const ob = upi && await upi.getOthersConfigParam<{ name: string }>('ide-haskell-cabal', 'builder')
+  debug: async ({ currentTarget }: TECE) => {
+    const ob =
+      upi &&
+      (await upi.getOthersConfigParam<{ name: string }>(
+        'ide-haskell-cabal',
+        'builder',
+      ))
     if (ob) {
-      debuggerInst = new Debugger(breakpointUI.breakpoints, currentTarget.getModel(), ob.name)
+      debuggerInst = new Debugger(
+        breakpointUI.breakpoints,
+        currentTarget.getModel(),
+        ob.name,
+      )
     } else {
-      debuggerInst = new Debugger(breakpointUI.breakpoints, currentTarget.getModel())
+      debuggerInst = new Debugger(
+        breakpointUI.breakpoints,
+        currentTarget.getModel(),
+      )
     }
   },
   'debug-back': () => {
@@ -60,8 +72,13 @@ const commands = {
     )
   },
   'set-break-on-exception': async () => {
-    const result = await selectDebugModeView(debugModes, atom.config.get('haskell-debug.breakOnException'))
-    if (result !== undefined) { atom.config.set('haskell-debug.breakOnException', result) }
+    const result = await selectDebugModeView(
+      debugModes,
+      atom.config.get('haskell-debug.breakOnException'),
+    )
+    if (result !== undefined) {
+      atom.config.set('haskell-debug.breakOnException', result)
+    }
   },
 }
 
@@ -77,10 +94,16 @@ function onFirstRun() {
   const out = cp.exec(where + ' node')
 
   out.on('close', (code) => {
-    if (code === 1) {// not found
+    if (code === 1) {
+      // not found
       // fallback to the node in apm
-      atom.config.set('haskell-debug.nodeCommand', path.resolve(atom.packages.getApmPath(), '../../bin/atom'))
-      if (state) { state.properlyActivated = true }
+      atom.config.set(
+        'haskell-debug.nodeCommand',
+        path.resolve(atom.packages.getApmPath(), '../../bin/atom'),
+      )
+      if (state) {
+        state.properlyActivated = true
+      }
     }
   })
 }
@@ -97,7 +120,7 @@ function activePaneObserver(pane: object) {
       if (debuggerInst) {
         debuggerInst.showPanels()
       }
-      return  // don't do below
+      return // don't do below
     }
   }
   // if any pane that isn't a haskell source file and we're debugging
@@ -140,7 +163,9 @@ export function serialize() {
 
 export function consumeHaskellUpi(reg: UPI.IUPIRegistration) {
   const tooltipOverride = new TooltipOverride(async (expression) => {
-    if (debuggerInst === undefined) { return undefined }
+    if (debuggerInst === undefined) {
+      return undefined
+    }
     return debuggerInst.resolveExpression(expression)
   })
   upi = reg({

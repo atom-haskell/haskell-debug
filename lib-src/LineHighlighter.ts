@@ -6,10 +6,15 @@ export class LineHighlighter {
   private currentMarkedEditor?: atomAPI.TextEditor
 
   public async hightlightLine(info: BreakInfo) {
-    const editor = (await atom.workspace.open(info.filename, { searchAllPanes: true })) as any as atomAPI.TextEditor
+    const editor = ((await atom.workspace.open(info.filename, {
+      searchAllPanes: true,
+    })) as any) as atomAPI.TextEditor
     editor.scrollToBufferPosition(info.range[0])
 
-    if (this.currentMarkedEditor !== editor && this.debugLineMarker !== undefined) {
+    if (
+      this.currentMarkedEditor !== editor &&
+      this.debugLineMarker !== undefined
+    ) {
       this.debugLineMarker.destroy()
       this.debugLineMarker = undefined
     }
@@ -17,7 +22,9 @@ export class LineHighlighter {
     this.currentMarkedEditor = editor
 
     if (this.debugLineMarker === undefined) {
-      this.debugLineMarker = editor.markBufferRange(info.range, { invalidate: 'never' })
+      this.debugLineMarker = editor.markBufferRange(info.range, {
+        invalidate: 'never',
+      })
       editor.decorateMarker(this.debugLineMarker, {
         type: 'highlight',
         class: 'highlight-green',

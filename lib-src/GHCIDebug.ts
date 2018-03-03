@@ -27,17 +27,20 @@ export class GHCIDebug {
   private static pausedOnError = Symbol('Paused on Error')
   private static finishedDebugging = Symbol('Finished debugging')
 
-  private emitter: atomAPI.Emitter<{
-    'debug-finished': undefined /// Emmited when the debugger has reached the end of the program
-    'ready': ExceptionInfo | undefined /// Emmited when ghci has just stopped executing a command
-  }, {
-    'paused-on-exception': ExceptionInfo /// Emmited when the debugger is at an exception
-    'error': string /// Emmited when stderr has input
-    'error-completed': string /// Emmited when ghci reports an error for a given command
-    'line-changed': BreakInfo /// Emmited when the line that the debugger is on changes
-    'console-output': string /// Emmited when the ghci has outputed something to stdout, excluding the extra prompt
-    'command-issued': string /// Emmited when a command has been executed
-  }> = new atomAPI.Emitter()
+  private emitter: atomAPI.Emitter<
+    {
+      'debug-finished': undefined /// Emmited when the debugger has reached the end of the program
+      ready: ExceptionInfo | undefined /// Emmited when ghci has just stopped executing a command
+    },
+    {
+      'paused-on-exception': ExceptionInfo /// Emmited when the debugger is at an exception
+      error: string /// Emmited when stderr has input
+      'error-completed': string /// Emmited when ghci reports an error for a given command
+      'line-changed': BreakInfo /// Emmited when the line that the debugger is on changes
+      'console-output': string /// Emmited when the ghci has outputed something to stdout, excluding the extra prompt
+      'command-issued': string /// Emmited when a command has been executed
+    }
+  > = new atomAPI.Emitter()
   // tslint:disable-next-line: member-ordering
   public readonly on = this.emitter.on.bind(this.emitter)
 
@@ -45,7 +48,11 @@ export class GHCIDebug {
   private readyPromise: Promise<IRequestResult>
   private moduleNameByPath: Map<string, string> = new Map()
 
-  constructor(ghciCommand = 'ghci', ghciArgs: string[] = [], bufferPath?: string) {
+  constructor(
+    ghciCommand = 'ghci',
+    ghciArgs: string[] = [],
+    bufferPath?: string,
+  ) {
     this.addReadyEvent()
     this.readyPromise = this.init(ghciCommand, ghciArgs, bufferPath)
 
@@ -83,14 +90,19 @@ export class GHCIDebug {
       await this.run(`:break ${breakpoint}`)
     } else if (breakpoint.file) {
       try {
-        const moduleName: string = await this.moduleNameFromFilePath(breakpoint.file)
+        const moduleName: string = await this.moduleNameFromFilePath(
+          breakpoint.file,
+        )
         await this.run(`:break ${moduleName} ${breakpoint.line}`)
       } catch (e) {
-        atom.notifications.addError(`Failed to set breakpoint on ${breakpoint.file}`, {
-          detail: (e as Error).toString(),
-          stack: (e as Error).stack,
-          dismissable: true,
-        })
+        atom.notifications.addError(
+          `Failed to set breakpoint on ${breakpoint.file}`,
+          {
+            detail: (e as Error).toString(),
+            stack: (e as Error).stack,
+            dismissable: true,
+          },
+        )
       }
     } else {
       atom.notifications.addError('Failed to set breakpoint', {
@@ -101,7 +113,7 @@ export class GHCIDebug {
   }
 
   /** resolved the given expression using :print, returns null if it is invalid
-  */
+   */
   public async resolveExpression(expression: string) {
     if (!expression.trim()) {
       return undefined
@@ -113,7 +125,9 @@ export class GHCIDebug {
 
     const getExpression = (ghciOutput: string) => {
       const matchResult = ghciOutput.match(/[^ ]* = (.*)/)
-      if (!matchResult) { return undefined }
+      if (!matchResult) {
+        return undefined
+      }
       return matchResult[1]
     }
 
@@ -121,7 +135,8 @@ export class GHCIDebug {
 
     // try printing expression
     const printingResult = getExpression(
-      await this.run(`:print ${expression}`, false, false, false, false))
+      await this.run(`:print ${expression}`, false, false, false, false),
+    )
     if (printingResult !== undefined) {
       return printingResult
     }
@@ -132,11 +147,20 @@ export class GHCIDebug {
     do {
       tempVarNum += 1
       potentialTempVar = getExpression(
-        await this.run(`:print temp${tempVarNum}`, false, false, false, false))
+        await this.run(`:print temp${tempVarNum}`, false, false, false, false),
+      )
     } while (potentialTempVar !== undefined)
 
-    await this.run(`let temp${tempVarNum} = ${expression}`, false, false, false, false)
-    return getExpression(await this.run(`:print temp${tempVarNum}`, false, false, false, false))
+    await this.run(
+      `let temp${tempVarNum} = ${expression}`,
+      false,
+      false,
+      false,
+      false,
+    )
+    return getExpression(
+      await this.run(`:print temp${tempVarNum}`, false, false, false, false),
+    )
   }
 
   public forward() {
@@ -153,11 +177,9 @@ export class GHCIDebug {
 
   public stop() {
     this.run(':quit')
-    setTimeout(
-      () => {
-        this.process && this.process.destroy()
-      },
-      3000)
+    setTimeout(() => {
+      this.process && this.process.destroy()
+    }, 3000)
   }
 
   public continue() {
@@ -191,9 +213,11 @@ export class GHCIDebug {
       } else if (arg.type === 'prompt') {
         tail = arg.prompt[1]
         prompt = arg.prompt[2]
-        if (emitCommandOutput) this.emitter.emit('console-output', `${tail}${prompt}> `)
+        if (emitCommandOutput)
+          this.emitter.emit('console-output', `${tail}${prompt}> `)
       } else if (arg.type === 'stdout') {
-        if (emitCommandOutput) this.emitter.emit('console-output', arg.line + EOL)
+        if (emitCommandOutput)
+          this.emitter.emit('console-output', arg.line + EOL)
       } else if (arg.type === 'stderr') {
         if (emitErrors) this.emitter.emit('error', arg.line + EOL)
       }
@@ -204,51 +228,62 @@ export class GHCIDebug {
 
     if (tail) result.push(tail)
 
-    if (emitErrors && err.length) this.emitter.emit('error-completed', err.join(EOL))
+    if (emitErrors && err.length)
+      this.emitter.emit('error-completed', err.join(EOL))
 
     if (emitStatusChanges) {
-      await this.emitStatusChanges(
-        prompt,
-        result.join(EOL),
-        emitHistoryLength,
-      )
+      await this.emitStatusChanges(prompt, result.join(EOL), emitHistoryLength)
     }
     return result.join(EOL)
   }
 
-  private async init(ghciCommand = 'ghci', ghciArgs: string[] = [], bufferPath?: string) {
+  private async init(
+    ghciCommand = 'ghci',
+    ghciArgs: string[] = [],
+    bufferPath?: string,
+  ) {
     // tslint:disable-next-line:no-null-keyword
     const cwd = (await ahu.getRootDir(bufferPath || null)).getPath()
     this.process = new InteractiveProcess(
-      ghciCommand, ghciArgs,
-      () => { this.emitter.emit('debug-finished', undefined) },
+      ghciCommand,
+      ghciArgs,
+      () => {
+        this.emitter.emit('debug-finished', undefined)
+      },
       { cwd, shell: true },
       /^(.*)#~IDEHASKELLREPL~(.*)~#$/,
     )
 
     return this.process.request(
       `:set prompt2 \"\"${EOL}` +
-      `:set prompt-cont \"\"${EOL}` +
-      `:set prompt \"#~IDEHASKELLREPL~%s~#\\n\"${EOL}`,
+        `:set prompt-cont \"\"${EOL}` +
+        `:set prompt \"#~IDEHASKELLREPL~%s~#\\n\"${EOL}`,
       (arg) => {
         // tslint:disable-next-line:totality-check
         if (arg.type === 'stdout') {
           this.emitter.emit('console-output', arg.line + EOL)
-        // tslint:disable-next-line:totality-check
+          // tslint:disable-next-line:totality-check
         } else if (arg.type === 'stderr') {
           this.emitter.emit('error', arg.line + EOL)
-        // tslint:disable-next-line:totality-check
+          // tslint:disable-next-line:totality-check
         } else if (arg.type === 'prompt') {
-          this.emitter.emit('console-output', `${arg.prompt[1]}${arg.prompt[2]}> `)
+          this.emitter.emit(
+            'console-output',
+            `${arg.prompt[1]}${arg.prompt[2]}> `,
+          )
         }
       },
     )
   }
 
   private addReadyEvent() {
-    this.emitter.on('paused-on-exception', () => this.emitter.emit('ready', undefined))
+    this.emitter.on('paused-on-exception', () =>
+      this.emitter.emit('ready', undefined),
+    )
     this.emitter.on('line-changed', () => this.emitter.emit('ready', undefined))
-    this.emitter.on('debug-finished', () => this.emitter.emit('ready', undefined))
+    this.emitter.on('debug-finished', () =>
+      this.emitter.emit('ready', undefined),
+    )
   }
 
   private async getBindings() {
@@ -273,27 +308,39 @@ export class GHCIDebug {
   }
 
   private parsePrompt(stdOutput: string): BreakInfo | Symbol {
-    const patterns = [{
-      pattern: /^\[(?:[-\d]*: )?(.*):\((\d+),(\d+)\)-\((\d+),(\d+)\).*\].*$/,
-      func: (match) => ({
-        filename: match[1],
-        range: [[parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
-        [parseInt(match[4], 10), parseInt(match[5], 10)]],
-      }),
-    }, {
-      pattern: /^\[(?:[-\d]*: )?(.*):(\d*):(\d*)-(\d*)\].*$/,
-      func: (match) => ({
-        filename: match[1],
-        range: [[parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
-        [parseInt(match[2], 10) - 1, parseInt(match[4], 10)]],
-      }),
-    }, {
-      pattern: /^\[<exception thrown>\].*$/,
-      func: () => GHCIDebug.pausedOnError,
-    }, {
-      pattern: /^.*$/,
-      func: () => GHCIDebug.finishedDebugging,
-    }] as Array<{ pattern: RegExp; func: (match: string[]) => BreakInfo | Symbol }>
+    const patterns = [
+      {
+        pattern: /^\[(?:[-\d]*: )?(.*):\((\d+),(\d+)\)-\((\d+),(\d+)\).*\].*$/,
+        func: (match) => ({
+          filename: match[1],
+          range: [
+            [parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
+            [parseInt(match[4], 10), parseInt(match[5], 10)],
+          ],
+        }),
+      },
+      {
+        pattern: /^\[(?:[-\d]*: )?(.*):(\d*):(\d*)-(\d*)\].*$/,
+        func: (match) => ({
+          filename: match[1],
+          range: [
+            [parseInt(match[2], 10) - 1, parseInt(match[3], 10) - 1],
+            [parseInt(match[2], 10) - 1, parseInt(match[4], 10)],
+          ],
+        }),
+      },
+      {
+        pattern: /^\[<exception thrown>\].*$/,
+        func: () => GHCIDebug.pausedOnError,
+      },
+      {
+        pattern: /^.*$/,
+        func: () => GHCIDebug.finishedDebugging,
+      },
+    ] as Array<{
+      pattern: RegExp
+      func: (match: string[]) => BreakInfo | Symbol
+    }>
     for (const pattern of patterns) {
       const matchResult = stdOutput.match(pattern.pattern)
       if (matchResult) {
@@ -303,7 +350,11 @@ export class GHCIDebug {
     throw new Error('Cannot read prompt: \n' + stdOutput)
   }
 
-  private async emitStatusChanges(prompt: string, mainBody: string, emitHistoryLength: boolean) {
+  private async emitStatusChanges(
+    prompt: string,
+    mainBody: string,
+    emitHistoryLength: boolean,
+  ) {
     const result = this.parsePrompt(prompt)
 
     if (result === GHCIDebug.pausedOnError) {
@@ -338,7 +389,9 @@ export class GHCIDebug {
       if (matchResult) {
         this.moduleNameByPath.set(matchResult[2], matchResult[1])
       } else {
-        console.error(`Unexpected reply from GHCI ':show modules': ${moduleStr}`)
+        console.error(
+          `Unexpected reply from GHCI ':show modules': ${moduleStr}`,
+        )
       }
     }
     const newCachedModuleName = this.moduleNameByPath.get(filePath)

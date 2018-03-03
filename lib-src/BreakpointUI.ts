@@ -27,7 +27,9 @@ export class BreakpointUI {
     } else {
       breakpoints.forEach((breakpoint) => {
         const m = this.markers.get(breakpoint)
-        if (m) { m.destroy() }
+        if (m) {
+          m.destroy()
+        }
       })
     }
   }
@@ -40,11 +42,16 @@ export class BreakpointUI {
 
     view.addEventListener('click', (ev) => {
       const scopes = te.getRootScopeDescriptor().getScopesArray()
-      if (scopes.length === 1 && scopes[0] === 'source.haskell'
-        && atom.config.get('haskell-debug.clickGutterToToggleBreakpoint')) {
+      if (
+        scopes.length === 1 &&
+        scopes[0] === 'source.haskell' &&
+        atom.config.get('haskell-debug.clickGutterToToggleBreakpoint')
+      ) {
         const bufferRow = (ev.target as HTMLElement).dataset.bufferRow
         if (bufferRow === undefined) {
-          console.warn("haskell-debug: click on gutter doesn't have a buffer row property")
+          console.warn(
+            "haskell-debug: click on gutter doesn't have a buffer row property",
+          )
           return
         }
 
@@ -59,7 +66,8 @@ export class BreakpointUI {
   private setBreakpoint(breakpoint: Breakpoint, te: atomAPI.TextEditor) {
     const breakpointMarker = te.markBufferRange(
       [[breakpoint.line - 1, 0], [breakpoint.line, 0]],
-      { invalidate: 'inside' })
+      { invalidate: 'inside' },
+    )
 
     te.decorateMarker(breakpointMarker, {
       type: 'line-number',

@@ -3,16 +3,19 @@ import net = require('net')
 import os = require('os')
 import util = require('util')
 import atomAPI = require('atom')
-import { Message } from '../bin/message'
+import { Message } from '../bin-src/message'
 
 const PIPE_PATH = 'haskell-debug'
 
 export class TerminalReporter {
-  private emitter: atomAPI.Emitter<{
-    'close': undefined
-  }, {
-    'command': string
-  }> = new atomAPI.Emitter()
+  private emitter: atomAPI.Emitter<
+    {
+      close: undefined
+    },
+    {
+      command: string
+    }
+  > = new atomAPI.Emitter()
   // tslint:disable-next-line: member-ordering
   public readonly on = this.emitter.on.bind(this.emitter)
 
@@ -23,8 +26,10 @@ export class TerminalReporter {
   private totalData = ''
 
   constructor() {
-    const connectionPath = os.platform() === 'win32' ?
-      '\\\\.\\pipe\\' + PIPE_PATH : `/tmp/${PIPE_PATH}.sock`
+    const connectionPath =
+      os.platform() === 'win32'
+        ? '\\\\.\\pipe\\' + PIPE_PATH
+        : `/tmp/${PIPE_PATH}.sock`
     const terminalEchoPath = `${__dirname}/../bin/TerminalEcho.js`
 
     this.server = net.createServer((socket) => {
@@ -40,8 +45,13 @@ export class TerminalReporter {
 
     this.server.listen(connectionPath, () => {
       if (atom.config.get('haskell-debug.showTerminal')) {
-        const nodeCommand = `${atom.config.get('haskell-debug.nodeCommand')} ${terminalEchoPath}`
-        const commandToRun = util.format(atom.config.get('haskell-debug.terminalCommand'), nodeCommand)
+        const nodeCommand = `${atom.config.get(
+          'haskell-debug.nodeCommand',
+        )} ${terminalEchoPath}`
+        const commandToRun = util.format(
+          atom.config.get('haskell-debug.terminalCommand'),
+          nodeCommand,
+        )
 
         this.process = cp.exec(commandToRun)
       }
