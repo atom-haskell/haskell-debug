@@ -92,7 +92,6 @@ describe('GHCIDebug', function() {
       await session.run('let temp1 = -4')
       expect(await session.run('temp1')).to.equal('-4')
       await session.resolveExpression('2+3')
-      console.log(await session.run(':show bindings'))
       expect(await session.run('temp1')).to.equal('-4')
     })
   })
