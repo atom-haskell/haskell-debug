@@ -11,7 +11,7 @@
     "lint": "tslint --project lib-src && tslint --project bin-src && tslint --project spec",
     "test": "npm run typecheck && npm run lint && npm run prettier-check"
   },
-  "atomTestRunner": "./spec/runner.js",
+  "atomTestRunner": "./node_modules/atom-ts-spec-runner/runner.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/atom-haskell/haskell-debug.git"
@@ -48,7 +48,7 @@
     "@types/lodash": "^4.14.104",
     "@types/mocha": "^2.2.48",
     "atom-haskell-tslint-rules": "^0.2.2",
-    "atom-mocha-test-runner": "^1.2.0",
+    "atom-ts-spec-runner": "^1.1.0",
     "chai": "^4.1.2",
     "prettier": "^1.11.1",
     "ts-node": "^5.0.1",
