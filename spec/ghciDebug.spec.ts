@@ -25,7 +25,7 @@ describe('GHCIDebug', function() {
   this.timeout(10000)
 
   beforeEach(async () => {
-    session = new GHCIDebug.GHCIDebug('stack', ['repl'])
+    session = new GHCIDebug.GHCIDebug('ghci', [])
     await session.loadModule(path.resolve(__dirname, './test.hs'))
     // reload the module for a clean copy every time
   })
