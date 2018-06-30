@@ -1,3 +1,14 @@
+## 0.3.6
+
+-   More careful asyncIterator definition
+-   Remove debug line
+-   Revert to using plain ghci
+-   Use atom-ts-spec-runner
+-   Lints and style
+-   Don't run ghci-specific tests on travis
+-   Reshuffle sources, bump dependencies, add travis
+-   Bump dependencies
+
 ## 0.3.5
 * Simplify terminal-echo
 * Remove unused terminal-reporter message
