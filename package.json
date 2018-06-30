@@ -12,10 +12,7 @@
     "test": "npm run typecheck && npm run lint && npm run prettier-check"
   },
   "atomTestRunner": "./node_modules/atom-ts-spec-runner/runner.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/atom-haskell/haskell-debug.git"
-  },
+  "repository": "https://github.com/atom-haskell/haskell-debug",
   "keywords": [
     "haskell",
     "debugger"
